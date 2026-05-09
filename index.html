@@ -25,329 +25,182 @@
   }
 
   html { font-size: 16px; scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--paper); color: var(--ink); line-height: 1.6; }
 
-  body {
-    font-family: var(--sans);
-    background: var(--paper);
-    color: var(--ink);
-    line-height: 1.6;
-  }
-
-  /* NAV */
   nav {
     position: sticky; top: 0; z-index: 100;
-    background: var(--paper);
-    border-bottom: 1px solid var(--rule);
+    background: var(--paper); border-bottom: 1px solid var(--rule);
     padding: 0 40px;
     display: flex; align-items: center; justify-content: space-between;
     height: 60px;
   }
 
-  .nav-brand {
-    display: flex; align-items: baseline; gap: 10px;
-    text-decoration: none; color: inherit;
-  }
-
-  .nav-brand-name {
-    font-family: var(--serif);
-    font-size: 22px;
-    color: var(--ink);
-    letter-spacing: -0.02em;
-  }
-
-  .nav-brand-by {
-    font-size: 11px;
-    color: var(--ink-3);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .nav-links {
-    display: flex; gap: 32px; list-style: none;
-  }
-
-  .nav-links a {
-    font-size: 13px;
-    color: var(--ink-2);
-    text-decoration: none;
-    letter-spacing: 0.02em;
-    transition: color 0.2s;
-  }
-
+  .nav-brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; color: inherit; }
+  .nav-brand-name { font-family: var(--serif); font-size: 22px; color: var(--ink); letter-spacing: -0.02em; }
+  .nav-brand-by { font-size: 11px; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .nav-links { display: flex; gap: 32px; list-style: none; }
+  .nav-links a { font-size: 13px; color: var(--ink-2); text-decoration: none; letter-spacing: 0.02em; transition: color 0.2s; }
   .nav-links a:hover { color: var(--accent); }
   .nav-links a.active { color: var(--accent); font-weight: 500; }
 
-  /* HERO */
   .hero {
-    padding: 96px 40px 80px;
-    max-width: 900px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 60px;
-    align-items: center;
+    padding: 80px 40px 72px;
+    max-width: 900px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.1fr 0.9fr;
+    gap: 60px; align-items: center;
   }
 
-  .hero-text {}
-
   .hero-eyebrow {
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--accent-mid);
-    font-weight: 500;
-    margin-bottom: 16px;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent-mid); font-weight: 500; margin-bottom: 16px;
   }
 
   .hero-headline {
     font-family: var(--serif);
-    font-size: 52px;
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    color: var(--ink);
-    margin-bottom: 20px;
+    font-size: 38px; line-height: 1.1; letter-spacing: -0.02em;
+    color: var(--ink); margin-bottom: 20px;
   }
 
-  .hero-sub {
-    font-size: 16px;
-    color: var(--ink-2);
-    line-height: 1.7;
-    margin-bottom: 32px;
-    font-weight: 300;
+  .hero-body {
+    font-size: 14px; color: var(--ink-2); line-height: 1.8;
+    font-weight: 300; margin-bottom: 28px;
   }
 
-  .hero-actions {
-    display: flex; gap: 12px; align-items: center;
+  .hero-body a {
+    color: var(--accent); text-decoration: underline;
+    text-decoration-color: var(--accent-mid);
+    text-underline-offset: 2px;
   }
+
+  .hero-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 
   .btn-primary {
-    background: var(--accent);
-    color: #fff;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 4px;
-    font-family: var(--sans);
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
+    background: var(--accent); color: #fff;
+    padding: 11px 22px; border: none; border-radius: 4px;
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.04em; cursor: pointer;
+    text-decoration: none; display: inline-block;
     transition: background 0.2s;
   }
-
   .btn-primary:hover { background: #234830; }
 
   .btn-secondary {
-    color: var(--ink-2);
-    font-size: 13px;
-    text-decoration: none;
-    letter-spacing: 0.02em;
-    border-bottom: 1px solid var(--rule);
-    padding-bottom: 1px;
-    transition: color 0.2s, border-color 0.2s;
+    color: var(--ink-2); font-size: 13px; text-decoration: none;
+    letter-spacing: 0.02em; border-bottom: 1px solid var(--rule);
+    padding-bottom: 1px; transition: color 0.2s, border-color 0.2s;
   }
-
   .btn-secondary:hover { color: var(--accent); border-color: var(--accent); }
 
   .hero-visual {
-    background: var(--paper-2);
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    padding: 28px;
-    font-size: 12px;
-    font-family: 'Courier New', monospace;
-    color: var(--ink-3);
-    line-height: 1.8;
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 8px; padding: 24px;
+    font-size: 12px; font-family: 'Courier New', monospace;
+    color: var(--ink-3); line-height: 1.9;
   }
+  .line-green { color: var(--accent-mid); }
+  .line-dim { color: var(--paper-3); }
 
-  .hero-visual .line-green { color: var(--accent-mid); }
-  .hero-visual .line-dim { color: var(--paper-3); }
+  .divider { max-width: 900px; margin: 0 auto; border: none; border-top: 1px solid var(--rule); }
 
-  /* DIVIDER */
-  .divider {
-    max-width: 900px;
-    margin: 0 auto;
-    border: none;
-    border-top: 1px solid var(--rule);
-  }
-
-  /* FEATURES */
-  .features {
-    padding: 72px 40px;
-    max-width: 900px;
-    margin: 0 auto;
-  }
+  .features { padding: 64px 40px; max-width: 900px; margin: 0 auto; }
 
   .section-label {
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-3);
-    font-weight: 500;
-    margin-bottom: 48px;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 500; margin-bottom: 40px;
   }
 
   .features-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 40px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;
   }
-
-  .feature {}
 
   .feature-number {
-    font-family: var(--serif);
-    font-size: 36px;
-    color: var(--paper-3);
-    line-height: 1;
-    margin-bottom: 12px;
+    font-family: var(--serif); font-size: 32px;
+    color: var(--paper-3); line-height: 1; margin-bottom: 10px;
   }
 
-  .feature-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--ink);
-    margin-bottom: 8px;
-  }
+  .feature-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 8px; }
 
-  .feature-body {
-    font-size: 13px;
-    color: var(--ink-2);
-    line-height: 1.7;
-    font-weight: 300;
-  }
+  .feature-body { font-size: 13px; color: var(--ink-2); line-height: 1.75; font-weight: 300; }
 
-  /* OLYCOMP */
   .olycomp {
     background: var(--accent-light);
-    border-top: 1px solid var(--rule);
-    border-bottom: 1px solid var(--rule);
-    padding: 72px 40px;
+    border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+    padding: 64px 40px;
   }
 
   .olycomp-inner {
-    max-width: 900px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 80px;
-    align-items: start;
+    max-width: 900px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 64px; align-items: start;
   }
 
   .olycomp-label {
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--accent-mid);
-    font-weight: 500;
-    margin-bottom: 16px;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent-mid); font-weight: 500; margin-bottom: 14px;
   }
 
   .olycomp-headline {
-    font-family: var(--serif);
-    font-size: 36px;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-    color: var(--ink);
-    margin-bottom: 20px;
+    font-family: var(--serif); font-size: 32px;
+    letter-spacing: -0.02em; line-height: 1.15;
+    color: var(--ink); margin-bottom: 16px;
   }
 
   .olycomp-body {
-    font-size: 14px;
-    color: var(--ink-2);
-    line-height: 1.8;
-    font-weight: 300;
-    margin-bottom: 16px;
+    font-size: 14px; color: var(--ink-2); line-height: 1.8;
+    font-weight: 300; margin-bottom: 16px;
   }
 
-  /* SUBSCRIBE */
-  .subscribe {}
+  .olycomp-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 
-  .subscribe-headline {
-    font-family: var(--serif);
-    font-size: 24px;
-    letter-spacing: -0.01em;
-    color: var(--ink);
-    margin-bottom: 8px;
+  .olycomp-list li {
+    font-size: 13px; color: var(--ink-2); font-weight: 300;
+    padding-left: 16px; position: relative; line-height: 1.6;
   }
 
-  .subscribe-body {
-    font-size: 13px;
-    color: var(--ink-2);
-    line-height: 1.7;
-    font-weight: 300;
-    margin-bottom: 20px;
+  .olycomp-list li::before {
+    content: '·'; position: absolute; left: 0;
+    color: var(--accent-mid); font-size: 16px; line-height: 1.3;
   }
 
-  .subscribe-form {
-    display: flex; flex-direction: column; gap: 8px;
+  .stay-connected {
+    border-top: 1px solid var(--rule); padding-top: 28px;
   }
 
-  .subscribe-form input {
-    background: var(--paper);
-    border: 1px solid var(--rule);
-    border-radius: 4px;
-    padding: 10px 14px;
-    font-family: var(--sans);
-    font-size: 13px;
-    color: var(--ink);
-    width: 100%;
-    outline: none;
-    transition: border-color 0.2s;
+  .stay-headline {
+    font-family: var(--serif); font-size: 24px;
+    letter-spacing: -0.01em; color: var(--ink); margin-bottom: 12px;
   }
 
-  .subscribe-form input:focus { border-color: var(--accent-mid); }
-  .subscribe-form input::placeholder { color: var(--ink-3); }
-
-  .subscribe-note {
-    font-size: 11px;
-    color: var(--ink-3);
-    line-height: 1.6;
-    margin-top: 4px;
+  .stay-body {
+    font-size: 13px; color: var(--ink-2); line-height: 1.75;
+    font-weight: 300; margin-bottom: 14px;
   }
 
-  /* FOOTER */
+  .stay-cta {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 500; color: var(--accent);
+    text-decoration: none; border-bottom: 1px solid var(--accent-mid);
+    padding-bottom: 1px; transition: opacity 0.2s;
+  }
+  .stay-cta:hover { opacity: 0.75; }
+
   footer {
-    padding: 32px 40px;
-    border-top: 1px solid var(--rule);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 100%;
+    padding: 32px 40px; border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: center;
   }
 
-  .footer-brand {
-    font-family: var(--serif);
-    font-size: 16px;
-    color: var(--ink-2);
-  }
-
-  .footer-copy {
-    font-size: 12px;
-    color: var(--ink-3);
-  }
-
-  .footer-links {
-    display: flex; gap: 20px; list-style: none;
-  }
-
-  .footer-links a {
-    font-size: 12px;
-    color: var(--ink-3);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
+  .footer-brand { font-family: var(--serif); font-size: 16px; color: var(--ink-2); }
+  .footer-copy { font-size: 12px; color: var(--ink-3); }
+  .footer-links { display: flex; gap: 20px; list-style: none; }
+  .footer-links a { font-size: 12px; color: var(--ink-3); text-decoration: none; transition: color 0.2s; }
   .footer-links a:hover { color: var(--accent); }
 
   @media (max-width: 700px) {
-    .hero, .olycomp-inner { grid-template-columns: 1fr; gap: 40px; }
-    .features-grid { grid-template-columns: 1fr; gap: 32px; }
-    nav { padding: 0 20px; }
-    .hero, .features, .olycomp { padding-left: 20px; padding-right: 20px; }
-    .hero-headline { font-size: 36px; }
-    .nav-links { gap: 20px; }
+    .hero, .olycomp-inner { grid-template-columns: 1fr; gap: 36px; }
+    .features-grid { grid-template-columns: 1fr; gap: 28px; }
+    nav, .hero, .features, .olycomp, footer { padding-left: 20px; padding-right: 20px; }
+    .hero-headline { font-size: 30px; }
+    .nav-links { gap: 18px; }
   }
 </style>
 </head>
@@ -367,9 +220,9 @@
 
 <section class="hero">
   <div class="hero-text">
-    <p class="hero-eyebrow">Open camera intelligence</p>
-    <h1 class="hero-headline">Know what your camera can do</h1>
-    <p class="hero-sub">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam quis nostrud exercitation.</p>
+    <p class="hero-eyebrow">In pursuit of computational photography</p>
+    <h1 class="hero-headline">Learn what your camera can do</h1>
+    <p class="hero-body">The standard and <a href="https://learnandsupport.getolympus.com/learn-center/photography-tips/landscapes-nature/does-not-compute-oh-yes-it-does-using-computational" target="_blank" rel="noopener">computational photography</a> features in OM SYSTEM cameras are powerful but can be hard to figure out from a 500-page manual. OlyProbe is a free, simple application for Olympus and OM SYSTEM photographers that collects and reports all the available camera controls and their acceptable values for most newer models.</p>
     <div class="hero-actions">
       <a href="download.html" class="btn-primary">Download OlyProbe</a>
       <a href="results.html" class="btn-secondary">See community results →</a>
@@ -397,18 +250,18 @@
   <div class="features-grid">
     <div class="feature">
       <div class="feature-number">01</div>
-      <p class="feature-title">Complete capability map</p>
-      <p class="feature-body">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim.</p>
+      <p class="feature-title">Complete capabilities map</p>
+      <p class="feature-body">Every camera has different features. OlyProbe finds out what each camera is capable of and produces a capabilities map that reveals all the controls available on each camera model.</p>
     </div>
     <div class="feature">
       <div class="feature-number">02</div>
       <p class="feature-title">Cross-camera analysis</p>
-      <p class="feature-body">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat duis aute irure dolor in reprehenderit.</p>
+      <p class="feature-body">OlyProbe gives camera shoppers and multi-camera shooters an easy way to compare and contrast the capabilities of different camera models.</p>
     </div>
     <div class="feature">
       <div class="feature-number">03</div>
-      <p class="feature-title">Community library</p>
-      <p class="feature-body">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur excepteur sint occaecat cupidatat non proident.</p>
+      <p class="feature-title">Setting cheats</p>
+      <p class="feature-body">In addition to capturing all the controls and allowable settings, OlyProbe also records all the current settings at probe time, creating a cheat sheet for easy recall and setup for later shoots.</p>
     </div>
   </div>
 </section>
@@ -416,21 +269,23 @@
 <section class="olycomp">
   <div class="olycomp-inner">
     <div>
-      <p class="olycomp-label">Coming soon</p>
-      <h2 class="olycomp-headline">OlyComp — programmatic camera control</h2>
-      <p class="olycomp-body">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
-      <p class="olycomp-body">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim.</p>
-      <p class="olycomp-body">Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium totam rem aperiam eaque ipsa quae ab illo inventore veritatis.</p>
+      <p class="olycomp-label">Coming soon from Computography Lab</p>
+      <h2 class="olycomp-headline">OlyComp — creative remote control</h2>
+      <p class="olycomp-body">Now under development, OlyComp is a remote-control app for setting all standard controls and functions and also creating computational control sequences that are not available in the camera. These include:</p>
+      <ul class="olycomp-list">
+        <li>Bulb-ramped and variable speed time-lapse</li>
+        <li>Scripted asymmetrical exposure bracketing</li>
+        <li>Multi-setting memory for infinite custom settings</li>
+        <li>Live preview with real-time setting adjustment</li>
+      </ul>
     </div>
-    <div class="subscribe">
-      <h3 class="subscribe-headline">Stay informed</h3>
-      <p class="subscribe-body">Lorem ipsum dolor sit amet consectetur adipiscing elit. Submit your camera data to subscribe to OlyComp and OlyProbe updates. We will notify you when new features are available.</p>
-      <div class="subscribe-form">
-        <input type="text" placeholder="Your name (optional)">
-        <input type="email" placeholder="Email address (optional)">
-        <a href="download.html" class="btn-primary" style="text-align:center; margin-top:4px;">Download OlyProbe to subscribe</a>
+    <div>
+      <div class="stay-connected">
+        <h3 class="stay-headline">Stay connected</h3>
+        <p class="stay-body">We are building a community where computographers can create, save, share, and use clever and complex settings recipes to do what we call "high-intent photography."</p>
+        <p class="stay-body">To get download and upload access to the Setting Cheats community library, please subscribe on the download page.</p>
+        <a href="download.html" class="stay-cta">Subscribe on the download page →</a>
       </div>
-      <p class="subscribe-note">Contact information is entirely optional. You may submit camera data anonymously at any time. We will never share your details with third parties.</p>
     </div>
   </div>
 </section>
