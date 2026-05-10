@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setting Cheats — OlyProbe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1a18;
+    --ink-2: #4a4a44;
+    --ink-3: #8a8a80;
+    --paper: #f7f6f0;
+    --paper-2: #eeede5;
+    --paper-3: #e4e3d8;
+    --accent: #2d5a3d;
+    --accent-light: #e8f0ea;
+    --accent-mid: #4a8c62;
+    --rule: #d0cfc4;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --mono: 'Courier New', monospace;
+  }
+
+  html { font-size: 16px; }
+  body { font-family: var(--sans); background: var(--paper); color: var(--ink); line-height: 1.6; }
+
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--paper); border-bottom: 1px solid var(--rule);
+    padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px;
+  }
+  .nav-brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; color: inherit; }
+  .nav-brand-name { font-family: var(--serif); font-size: 22px; letter-spacing: -0.02em; }
+  .nav-brand-by { font-size: 11px; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .nav-links { display: flex; gap: 28px; list-style: none; }
+  .nav-links a { font-size: 13px; color: var(--ink-2); text-decoration: none; letter-spacing: 0.02em; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-links a.active { color: var(--accent); font-weight: 500; }
+
+  .page-header {
+    padding: 56px 40px 40px;
+    max-width: 960px; margin: 0 auto;
+    border-bottom: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 24px;
+  }
+  .page-eyebrow { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; margin-bottom: 12px; }
+  .page-headline { font-family: var(--serif); font-size: 44px; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink); margin-bottom: 12px; }
+  .page-sub { font-size: 14px; color: var(--ink-2); line-height: 1.7; font-weight: 300; max-width: 480px; }
+
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    padding: 10px 20px; border: none; border-radius: 4px;
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.04em; cursor: pointer;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.2s; white-space: nowrap;
+  }
+  .btn-primary:hover { background: #234830; }
+
+  .content { max-width: 960px; margin: 0 auto; padding: 32px 40px; }
+
+  /* STATS */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
+  .stat-card { background: var(--paper-2); border-radius: 8px; padding: 16px; }
+  .stat-value { font-family: var(--serif); font-size: 32px; letter-spacing: -0.02em; color: var(--ink); line-height: 1; margin-bottom: 6px; }
+  .stat-label { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* CONTROLS */
+  .controls {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 20px; padding-bottom: 20px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .controls input[type=text] {
+    flex: 1; min-width: 200px;
+    background: var(--paper); border: 1px solid var(--rule);
+    border-radius: 4px; padding: 8px 12px;
+    font-family: var(--sans); font-size: 13px; color: var(--ink);
+    outline: none; transition: border-color 0.2s;
+  }
+  .controls input[type=text]:focus { border-color: var(--accent-mid); }
+  .controls input[type=text]::placeholder { color: var(--ink-3); }
+  .controls select {
+    background: var(--paper); border: 1px solid var(--rule);
+    border-radius: 4px; padding: 8px 12px;
+    font-family: var(--sans); font-size: 13px; color: var(--ink);
+    outline: none; cursor: pointer;
+  }
+  .view-toggle { display: flex; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; margin-left: auto; }
+  .view-btn {
+    padding: 8px 12px; border: none; background: var(--paper);
+    cursor: pointer; font-size: 14px; color: var(--ink-3);
+    transition: background 0.2s, color 0.2s;
+  }
+  .view-btn.active { background: var(--accent); color: #fff; }
+
+  /* CARD VIEW */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+
+  .cheat-card {
+    border: 1px solid var(--rule); border-radius: 8px;
+    overflow: hidden; background: var(--paper);
+    display: flex; flex-direction: column;
+    transition: border-color 0.2s;
+  }
+  .cheat-card:hover { border-color: var(--accent-mid); }
+
+  .card-thumb {
+    height: 130px; background: var(--paper-2);
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; position: relative;
+    overflow: hidden;
+  }
+  .card-thumb-icon { font-size: 36px; color: var(--paper-3); }
+  .card-thumb-hint {
+    position: absolute; bottom: 8px; right: 8px;
+    background: rgba(26,26,24,0.6); color: #fff;
+    font-size: 10px; padding: 2px 7px; border-radius: 3px;
+    letter-spacing: 0.04em;
+  }
+
+  .card-body { padding: 12px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .card-meta { display: flex; justify-content: space-between; align-items: center; }
+  .category-pill {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px;
+    font-weight: 500; letter-spacing: 0.02em;
+  }
+  .cat-landscape { background: #e8f0ea; color: #2d5a3d; }
+  .cat-wildlife { background: #e8f3e0; color: #3b6d11; }
+  .cat-architecture { background: #faeeda; color: #854f0b; }
+  .cat-portrait { background: #f0effe; color: #534ab7; }
+  .cat-astrophotography { background: #e6f1fb; color: #185fa5; }
+  .cat-macro { background: #fbeaf0; color: #993556; }
+  .cat-default { background: var(--paper-2); color: var(--ink-3); }
+  .card-camera { font-size: 11px; color: var(--ink-3); }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .card-submitter { font-size: 11px; color: var(--ink-3); }
+  .card-download {
+    display: block; width: 100%; padding: 7px;
+    margin-top: auto;
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 4px; font-family: var(--sans); font-size: 12px;
+    color: var(--ink-2); cursor: pointer; text-align: center;
+    text-decoration: none; transition: background 0.2s, border-color 0.2s;
+  }
+  .card-download:hover { background: var(--accent-light); border-color: var(--accent-mid); color: var(--accent); }
+
+  .add-card {
+    border: 1px dashed var(--rule); border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 8px; padding: 24px;
+    cursor: pointer; text-decoration: none; color: var(--ink-3);
+    min-height: 220px; transition: border-color 0.2s, color 0.2s;
+  }
+  .add-card:hover { border-color: var(--accent-mid); color: var(--accent); }
+  .add-card-icon { font-size: 28px; }
+  .add-card-label { font-size: 12px; }
+
+  /* LIST VIEW */
+  .list-view { display: none; }
+  .list-header {
+    display: grid;
+    grid-template-columns: 52px 1fr 1.4fr 90px 100px 80px 100px;
+    padding: 10px 16px;
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 8px 8px 0 0; border-bottom: none;
+    font-size: 11px; font-weight: 500; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.07em; gap: 8px;
+    align-items: center;
+  }
+  .list-row {
+    display: grid;
+    grid-template-columns: 52px 1fr 1.4fr 90px 100px 80px 100px;
+    padding: 10px 16px; gap: 8px;
+    border: 1px solid var(--rule); border-top: none;
+    align-items: center; background: var(--paper);
+    transition: background 0.15s;
+  }
+  .list-row:last-child { border-radius: 0 0 8px 8px; }
+  .list-row:hover { background: var(--paper-2); }
+  .list-thumb {
+    width: 40px; height: 40px; background: var(--paper-2);
+    border-radius: 4px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    border: 1px solid var(--rule); font-size: 16px; color: var(--paper-3);
+    transition: border-color 0.2s;
+  }
+  .list-thumb:hover { border-color: var(--accent-mid); }
+  .list-title { font-size: 13px; font-weight: 500; }
+  .list-desc { font-size: 12px; color: var(--ink-2); }
+  .list-camera { font-size: 12px; color: var(--ink-2); }
+  .list-date { font-size: 12px; color: var(--ink-3); }
+  .list-by { font-size: 12px; color: var(--ink-3); }
+  .list-dl {
+    padding: 5px 10px; background: var(--paper-2);
+    border: 1px solid var(--rule); border-radius: 4px;
+    font-family: var(--sans); font-size: 11px; color: var(--ink-2);
+    cursor: pointer; text-align: center; text-decoration: none;
+    display: block; transition: background 0.2s;
+  }
+  .list-dl:hover { background: var(--accent-light); border-color: var(--accent-mid); color: var(--accent); }
+
+  /* MODAL OVERLAY */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(26,26,24,0.7);
+    align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--paper); border-radius: 12px;
+    border: 1px solid var(--rule); width: 100%; max-width: 600px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    padding: 14px 20px; border-bottom: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; background: var(--paper); z-index: 1;
+  }
+  .modal-header-left { display: flex; align-items: center; gap: 10px; }
+  .modal-title { font-size: 14px; font-weight: 500; }
+  .modal-close {
+    padding: 5px 10px; font-size: 12px;
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 4px; cursor: pointer; font-family: var(--sans);
+    color: var(--ink-2); transition: background 0.2s;
+  }
+  .modal-close:hover { background: var(--paper-3); }
+  .modal-image {
+    height: 280px; background: var(--paper-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 56px; color: var(--paper-3);
+    border-bottom: 1px solid var(--rule);
+  }
+  .modal-body { padding: 20px; }
+  .exif-section-label {
+    font-size: 11px; font-weight: 500; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 12px;
+  }
+  .exif-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 2px 24px; margin-bottom: 16px;
+  }
+  .exif-row {
+    display: flex; justify-content: space-between;
+    padding: 5px 0; border-bottom: 1px solid var(--paper-3);
+    font-size: 12px;
+  }
+  .exif-label { color: var(--ink-3); }
+  .exif-value { font-weight: 500; color: var(--ink); }
+  .exif-toggle {
+    width: 100%; padding: 8px; font-size: 12px;
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 4px; cursor: pointer; font-family: var(--sans);
+    color: var(--ink-2); margin-bottom: 12px; transition: background 0.2s;
+  }
+  .exif-toggle:hover { background: var(--paper-3); }
+  .exif-manifest {
+    display: none; background: var(--paper-2); border-radius: 6px;
+    padding: 12px; font-family: var(--mono); font-size: 11px;
+    color: var(--ink-3); line-height: 1.9; max-height: 200px;
+    overflow-y: auto; border: 1px solid var(--rule);
+  }
+  .exif-manifest.open { display: block; }
+  .modal-actions {
+    display: flex; gap: 8px; padding: 14px 20px;
+    border-top: 1px solid var(--rule);
+  }
+  .modal-dl-btn {
+    flex: 1; padding: 10px; font-size: 12px; font-weight: 500;
+    font-family: var(--sans); cursor: pointer; border-radius: 4px;
+    border: 1px solid var(--rule); background: var(--paper-2);
+    color: var(--ink-2); transition: background 0.2s;
+    text-decoration: none; text-align: center; display: block;
+  }
+  .modal-dl-btn:hover { background: var(--paper-3); }
+  .modal-dl-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .modal-dl-btn.primary:hover { background: #234830; }
+
+  footer {
+    padding: 32px 40px; border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer-brand { font-family: var(--serif); font-size: 16px; color: var(--ink-2); }
+  .footer-copy { font-size: 12px; color: var(--ink-3); }
+  .footer-links { display: flex; gap: 20px; list-style: none; }
+  .footer-links a { font-size: 12px; color: var(--ink-3); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--accent); }
+
+  @media (max-width: 700px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    nav, .page-header, .content, footer { padding-left: 20px; padding-right: 20px; }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .page-headline { font-size: 32px; }
+    .list-header, .list-row { grid-template-columns: 40px 1fr 1fr 80px; }
+    .list-header span:nth-child(4), .list-header span:nth-child(6),
+    .list-row .list-date, .list-row .list-by { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <span class="nav-brand-name">OlyProbe</span>
+    <span class="nav-brand-by">by Computography Lab</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="download.html">Download</a></li>
+    <li><a href="cheats.html" class="active">Cheats</a></li>
+    <li><a href="community.html">Community</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div>
+    <p class="page-eyebrow">Community library</p>
+    <h1 class="page-headline">Setting cheats</h1>
+    <p class="page-sub">Browse, sort, and search the community library of camera setting recipes. Click any thumbnail to preview the example image and EXIF data. Downloading requires a subscriber account.</p>
+  </div>
+  <a href="community.html" class="btn-primary">&#8593; Submit a cheat</a>
+</div>
+
+<div class="content">
+
+  <div class="stats">
+    <div class="stat-card">
+      <p class="stat-value" id="stat-total">—</p>
+      <p class="stat-label">Total cheats</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-value" id="stat-cameras">—</p>
+      <p class="stat-label">Camera models</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-value" id="stat-contributors">—</p>
+      <p class="stat-label">Contributors</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-value" id="stat-cats">—</p>
+      <p class="stat-label">Categories</p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="search" placeholder="Search type or description..." oninput="filterCheats()">
+    <select id="filter-cat" onchange="filterCheats()">
+      <option value="">All categories</option>
+      <option>Landscape</option><option>Portrait</option><option>Wildlife</option>
+      <option>Architecture</option><option>Street</option><option>Macro</option>
+      <option>Astrophotography</option><option>Long exposure</option><option>Night</option>
+      <option>Sports/Action</option><option>Seascape</option><option>Forest</option>
+      <option>Weather/Storm</option><option>Wedding/Event</option><option>Product</option>
+      <option>Still life</option><option>Food</option><option>Fashion</option>
+      <option>Abstract</option><option>Fine art</option><option>Time-lapse</option>
+      <option>High speed</option><option>HDR</option><option>Live composite</option>
+      <option>Focus bracketing</option><option>Exposure bracketing</option>
+      <option>Multi-exposure</option>
+    </select>
+    <select id="filter-camera" onchange="filterCheats()">
+      <option value="">All cameras</option>
+      <option>OM-1 II</option><option>OM-1</option><option>E-M1 III</option>
+      <option>E-M1 II</option><option>E-M5 III</option><option>E-PL8</option>
+    </select>
+    <select id="sort-by" onchange="filterCheats()">
+      <option value="newest">Sort: newest</option>
+      <option value="oldest">Sort: oldest</option>
+      <option value="category">Sort: category</option>
+      <option value="camera">Sort: camera model</option>
+    </select>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-card" onclick="setView('card')" aria-label="Card view">&#9783;</button>
+      <button class="view-btn" id="btn-list" onclick="setView('list')" aria-label="List view">&#9776;</button>
+    </div>
+  </div>
+
+  <div id="card-view">
+    <div class="card-grid" id="card-grid"></div>
+  </div>
+
+  <div id="list-view" class="list-view">
+    <div class="list-header">
+      <span></span>
+      <span>Category</span>
+      <span>Description</span>
+      <span>Camera</span>
+      <span>Date</span>
+      <span>By</span>
+      <span></span>
+    </div>
+    <div id="list-rows"></div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal-box" id="modal-box">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <span class="category-pill cat-landscape" id="modal-cat-pill">Landscape</span>
+        <span class="modal-title" id="modal-title">moonlit night scene</span>
+      </div>
+      <button class="modal-close" onclick="closeModal()">Close</button>
+    </div>
+    <div class="modal-image">&#9654;</div>
+    <div class="modal-body">
+      <p class="exif-section-label">EXIF summary</p>
+      <div class="exif-grid" id="modal-exif-summary"></div>
+      <button class="exif-toggle" id="exif-toggle-btn" onclick="toggleExif()">&#8964; Show full EXIF manifest</button>
+      <div class="exif-manifest" id="exif-manifest"></div>
+    </div>
+    <div class="modal-actions">
+      <a href="community.html" class="modal-dl-btn">&#8681; Download PDF</a>
+      <a href="community.html" class="modal-dl-btn primary">&#8681; Download to camera</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span class="footer-brand">OlyProbe</span>
+  <ul class="footer-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="download.html">Download</a></li>
+    <li><a href="cheats.html">Cheats</a></li>
+    <li><a href="community.html">Community</a></li>
+  </ul>
+  <span class="footer-copy">© 2025 Computography Lab</span>
+</footer>
+
+<script>
+var CHEATS = [
+  { id:1, cat:'Landscape', desc:'moonlit night scene', camera:'OM-1 II', date:'2025-11-02', by:'J. Smith',
+    exif:{ 'Shutter':'30"', 'Aperture':'f/8', 'ISO':'200', 'Exp comp':'–0.3', 'Focal length':'17mm', '35mm equiv':'34mm', 'Camera':'OM-1 II', 'Date':'2025-11-02' },
+    manifest:'Make: OM Digital Solutions\nModel: OM-1 Mark II\nSoftware: Firmware 1.3\nExposureTime: 30/1\nFNumber: 80/10\nISOSpeedRatings: 200\nExposureBiasValue: -3/10\nMeteringMode: Multi-segment\nFlash: Off\nFocalLength: 17mm\nFocalLengthIn35mmFilm: 34mm\nWhiteBalance: Auto\nColorSpace: sRGB\nPixelXDimension: 5184\nPixelYDimension: 3888\n··· 34 more fields' },
+  { id:2, cat:'Wildlife', desc:'fast birds in flight', camera:'OM-1', date:'2025-10-18', by:'A. Patel',
+    exif:{ 'Shutter':'1/2000s', 'Aperture':'f/5.6', 'ISO':'1600', 'Exp comp':'0.0', 'Focal length':'300mm', '35mm equiv':'600mm', 'Camera':'OM-1', 'Date':'2025-10-18' },
+    manifest:'Make: OM Digital Solutions\nModel: OM-1\nSoftware: Firmware 1.2\nExposureTime: 1/2000\nFNumber: 56/10\nISOSpeedRatings: 1600\nExposureBiasValue: 0\nMeteringMode: Multi-segment\nFlash: Off\nFocalLength: 300mm\nFocalLengthIn35mmFilm: 600mm\nWhiteBalance: Auto\nColorSpace: sRGB\n··· 32 more fields' },
+  { id:3, cat:'Architecture', desc:'interior natural light', camera:'E-M1 III', date:'2025-10-05', by:'M. Chen',
+    exif:{ 'Shutter':'1/60s', 'Aperture':'f/4', 'ISO':'800', 'Exp comp':'+0.7', 'Focal length':'12mm', '35mm equiv':'24mm', 'Camera':'E-M1 III', 'Date':'2025-10-05' },
+    manifest:'Make: Olympus\nModel: E-M1 Mark III\nSoftware: Firmware 3.1\nExposureTime: 1/60\nFNumber: 40/10\nISOSpeedRatings: 800\nExposureBiasValue: 7/10\nMeteringMode: Center-weighted\nFlash: Off\nFocalLength: 12mm\nFocalLengthIn35mmFilm: 24mm\n··· 30 more fields' },
+];
+
+var currentCheats = CHEATS.slice();
+var currentView = 'card';
+var exifOpen = false;
+
+function catClass(cat) {
+  var m = { 'Landscape':'cat-landscape','Wildlife':'cat-wildlife','Architecture':'cat-architecture','Portrait':'cat-portrait','Astrophotography':'cat-astrophotography','Macro':'cat-macro' };
+  return m[cat] || 'cat-default';
+}
+
+function renderCards(data) {
+  var g = document.getElementById('card-grid');
+  g.innerHTML = '';
+  data.forEach(function(c) {
+    var d = document.createElement('div');
+    d.className = 'cheat-card';
+    d.innerHTML = '<div class="card-thumb" onclick="openModal('+c.id+')" title="Click to preview"><span class="card-thumb-icon">&#9654;</span><span class="card-thumb-hint">preview</span></div><div class="card-body"><div class="card-meta"><span class="category-pill '+catClass(c.cat)+'">'+c.cat+'</span><span class="card-camera">'+c.camera+'</span></div><p class="card-title">'+c.desc+'</p><p class="card-submitter">'+c.by+' · '+c.date+'</p><a href="community.html" class="card-download">&#8681; Download</a></div>';
+    g.appendChild(d);
+  });
+  var add = document.createElement('a');
+  add.href = 'community.html';
+  add.className = 'add-card';
+  add.innerHTML = '<span class="add-card-icon">+</span><span class="add-card-label">Submit a cheat</span>';
+  g.appendChild(add);
+}
+
+function renderList(data) {
+  var r = document.getElementById('list-rows');
+  r.innerHTML = '';
+  data.forEach(function(c) {
+    var d = document.createElement('div');
+    d.className = 'list-row';
+    d.innerHTML = '<div class="list-thumb" onclick="openModal('+c.id+')" title="Preview">&#9654;</div><span class="list-title"><span class="category-pill '+catClass(c.cat)+'">'+c.cat+'</span></span><span class="list-desc">'+c.desc+'</span><span class="list-camera">'+c.camera+'</span><span class="list-date">'+c.date+'</span><span class="list-by">'+c.by+'</span><a href="community.html" class="list-dl">&#8681; Download</a>';
+    r.appendChild(d);
+  });
+}
+
+function updateStats(data) {
+  document.getElementById('stat-total').textContent = data.length || '—';
+  var cameras = [...new Set(data.map(function(c){return c.camera;}))];
+  document.getElementById('stat-cameras').textContent = cameras.length || '—';
+  var byNames = data.filter(function(c){return c.by;});
+  var contributors = [...new Set(byNames.map(function(c){return c.by;}))];
+  document.getElementById('stat-contributors').textContent = contributors.length || '—';
+  var cats = [...new Set(data.map(function(c){return c.cat;}))];
+  document.getElementById('stat-cats').textContent = cats.length || '—';
+}
+
+function filterCheats() {
+  var q = document.getElementById('search').value.toLowerCase();
+  var cat = document.getElementById('filter-cat').value;
+  var cam = document.getElementById('filter-camera').value;
+  var sort = document.getElementById('sort-by').value;
+  var result = CHEATS.filter(function(c) {
+    var matchQ = !q || c.cat.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q);
+    var matchCat = !cat || c.cat === cat;
+    var matchCam = !cam || c.camera === cam;
+    return matchQ && matchCat && matchCam;
+  });
+  if(sort === 'oldest') result.sort(function(a,b){return a.date.localeCompare(b.date);});
+  else if(sort === 'category') result.sort(function(a,b){return a.cat.localeCompare(b.cat);});
+  else if(sort === 'camera') result.sort(function(a,b){return a.camera.localeCompare(b.camera);});
+  else result.sort(function(a,b){return b.date.localeCompare(a.date);});
+  currentCheats = result;
+  renderCards(result);
+  renderList(result);
+  updateStats(result);
+}
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('card-view').style.display = v==='card' ? 'block' : 'none';
+  document.getElementById('list-view').style.display = v==='list' ? 'block' : 'none';
+  document.getElementById('btn-card').classList.toggle('active', v==='card');
+  document.getElementById('btn-list').classList.toggle('active', v==='list');
+}
+
+function openModal(id) {
+  var c = CHEATS.find(function(x){return x.id===id;});
+  if(!c) return;
+  document.getElementById('modal-cat-pill').textContent = c.cat;
+  document.getElementById('modal-cat-pill').className = 'category-pill '+catClass(c.cat);
+  document.getElementById('modal-title').textContent = c.desc;
+  var sg = document.getElementById('modal-exif-summary');
+  sg.innerHTML = '';
+  Object.entries(c.exif).forEach(function(kv) {
+    sg.innerHTML += '<div class="exif-row"><span class="exif-label">'+kv[0]+'</span><span class="exif-value">'+kv[1]+'</span></div>';
+  });
+  document.getElementById('exif-manifest').textContent = c.manifest;
+  document.getElementById('exif-manifest').classList.remove('open');
+  document.getElementById('exif-toggle-btn').textContent = '⌄ Show full EXIF manifest';
+  exifOpen = false;
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeModalOutside(e) {
+  if(e.target === document.getElementById('modal')) closeModal();
+}
+
+function toggleExif() {
+  exifOpen = !exifOpen;
+  document.getElementById('exif-manifest').classList.toggle('open', exifOpen);
+  document.getElementById('exif-toggle-btn').textContent = exifOpen ? '⌃ Hide full EXIF manifest' : '⌄ Show full EXIF manifest';
+}
+
+filterCheats();
+</script>
+
+</body>
+</html>

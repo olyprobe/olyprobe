@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community — OlyProbe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1a18;
+    --ink-2: #4a4a44;
+    --ink-3: #8a8a80;
+    --paper: #f7f6f0;
+    --paper-2: #eeede5;
+    --paper-3: #e4e3d8;
+    --accent: #2d5a3d;
+    --accent-light: #e8f0ea;
+    --accent-mid: #4a8c62;
+    --rule: #d0cfc4;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --mono: 'Courier New', monospace;
+  }
+
+  html { font-size: 16px; }
+  body { font-family: var(--sans); background: var(--paper); color: var(--ink); line-height: 1.6; }
+
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--paper); border-bottom: 1px solid var(--rule);
+    padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px;
+  }
+  .nav-brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; color: inherit; }
+  .nav-brand-name { font-family: var(--serif); font-size: 22px; letter-spacing: -0.02em; }
+  .nav-brand-by { font-size: 11px; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .nav-links { display: flex; gap: 28px; list-style: none; }
+  .nav-links a { font-size: 13px; color: var(--ink-2); text-decoration: none; letter-spacing: 0.02em; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-links a.active { color: var(--accent); font-weight: 500; }
+
+  .page-header {
+    padding: 56px 40px 40px;
+    max-width: 960px; margin: 0 auto;
+    border-bottom: 1px solid var(--rule);
+  }
+  .page-eyebrow { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; margin-bottom: 12px; }
+  .page-headline { font-family: var(--serif); font-size: 44px; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink); margin-bottom: 12px; }
+  .page-sub { font-size: 14px; color: var(--ink-2); line-height: 1.7; font-weight: 300; max-width: 520px; }
+
+  .content { max-width: 960px; margin: 0 auto; padding: 40px 40px; }
+
+  .section-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; margin-bottom: 20px; }
+
+  /* AUTH GATE */
+  .auth-gate {
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 8px; padding: 24px; margin-bottom: 32px;
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  }
+  .auth-gate-text { flex: 1; min-width: 200px; }
+  .auth-gate-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .auth-gate-body { font-size: 13px; color: var(--ink-2); line-height: 1.6; font-weight: 300; }
+  .auth-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .auth-form input {
+    background: var(--paper); border: 1px solid var(--rule);
+    border-radius: 4px; padding: 9px 14px;
+    font-family: var(--sans); font-size: 13px; color: var(--ink);
+    outline: none; transition: border-color 0.2s; width: 240px;
+  }
+  .auth-form input:focus { border-color: var(--accent-mid); }
+  .auth-form input::placeholder { color: var(--ink-3); }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    padding: 9px 18px; border: none; border-radius: 4px;
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.04em; cursor: pointer;
+    transition: background 0.2s; white-space: nowrap;
+  }
+  .btn-primary:hover { background: #234830; }
+  .auth-note { font-size: 11px; color: var(--ink-3); margin-top: 6px; }
+  .auth-note a { color: var(--accent); }
+
+  /* MAIN PANELS */
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px; }
+
+  .panel {
+    border: 1px solid var(--rule); border-radius: 8px; overflow: hidden;
+  }
+  .panel-header {
+    padding: 16px 20px; background: var(--paper-2);
+    border-bottom: 1px solid var(--rule);
+  }
+  .panel-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .panel-desc { font-size: 12px; color: var(--ink-2); line-height: 1.6; font-weight: 300; }
+  .panel-body { padding: 20px; }
+
+  /* FORM ELEMENTS */
+  .field { margin-bottom: 14px; }
+  .field-label {
+    font-size: 11px; font-weight: 500; color: var(--ink-2);
+    text-transform: uppercase; letter-spacing: 0.04em;
+    display: block; margin-bottom: 5px;
+  }
+  .field-label .req { color: var(--accent-mid); margin-left: 2px; }
+  .field-label .opt { font-size: 10px; color: var(--ink-3); text-transform: none; font-weight: 300; margin-left: 4px; letter-spacing: 0; }
+  .field select,
+  .field input[type=text],
+  .field input[type=email] {
+    width: 100%; background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 9px 12px; font-family: var(--sans);
+    font-size: 13px; color: var(--ink); outline: none;
+    transition: border-color 0.2s;
+  }
+  .field select:focus,
+  .field input:focus { border-color: var(--accent-mid); }
+  .field input::placeholder { color: var(--ink-3); }
+
+  .upload-zone {
+    border: 1px dashed var(--rule); border-radius: 6px;
+    padding: 28px 20px; text-align: center; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .upload-zone:hover { border-color: var(--accent-mid); background: var(--accent-light); }
+  .upload-icon { font-size: 28px; color: var(--ink-3); display: block; margin-bottom: 8px; }
+  .upload-text { font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
+  .upload-hint { font-size: 11px; color: var(--ink-3); }
+
+  .capture-box {
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 6px; padding: 14px;
+  }
+  .capture-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .capture-body { font-size: 12px; color: var(--ink-2); line-height: 1.6; font-weight: 300; margin-bottom: 10px; }
+  .capture-status {
+    font-size: 11px; color: var(--ink-3); margin-bottom: 8px;
+    padding: 6px 10px; background: var(--paper); border-radius: 4px;
+    border: 1px solid var(--rule);
+  }
+
+  .btn-full {
+    display: block; width: 100%; padding: 10px;
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 4px; font-family: var(--sans); font-size: 13px;
+    color: var(--ink-2); cursor: pointer; text-align: center;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .btn-full:hover { background: var(--paper-3); }
+  .btn-full.accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-full.accent:hover { background: #234830; }
+  .btn-full + .btn-full { margin-top: 8px; }
+
+  /* SELECTED CHEAT */
+  .selected-cheat {
+    background: var(--accent-light); border: 1px solid var(--rule);
+    border-radius: 6px; padding: 12px 14px; margin-bottom: 14px;
+  }
+  .selected-cheat-label { font-size: 11px; color: var(--accent-mid); font-weight: 500; margin-bottom: 4px; }
+  .selected-cheat-name { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .selected-cheat-meta { font-size: 11px; color: var(--ink-3); }
+  .no-selection {
+    background: var(--paper-2); border: 1px dashed var(--rule);
+    border-radius: 6px; padding: 16px; text-align: center;
+    font-size: 12px; color: var(--ink-3); margin-bottom: 14px;
+  }
+  .no-selection a { color: var(--accent); }
+
+  /* COMPAT CHECK */
+  .compat-box {
+    border-top: 1px solid var(--rule); padding-top: 16px; margin-top: 16px;
+  }
+  .compat-title { font-size: 13px; font-weight: 500; margin-bottom: 10px; }
+  .compat-row {
+    display: flex; justify-content: space-between;
+    font-size: 12px; padding: 6px 0;
+    border-bottom: 1px solid var(--paper-3);
+  }
+  .compat-row-label { color: var(--ink-3); }
+  .compat-row-val { font-weight: 500; }
+  .compat-row-val.missing { color: var(--ink-3); font-weight: 300; font-style: italic; }
+  .compat-note { font-size: 11px; color: var(--ink-3); line-height: 1.6; margin-top: 10px; }
+
+  /* LEADERBOARD */
+  .leaderboard { border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; margin-bottom: 40px; }
+  .lb-header {
+    padding: 14px 20px; background: var(--paper-2);
+    border-bottom: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .lb-title { font-size: 15px; font-weight: 500; }
+  .lb-tabs { display: flex; gap: 6px; }
+  .lb-tab {
+    padding: 4px 10px; font-size: 11px; border-radius: 4px;
+    border: 1px solid var(--rule); background: var(--paper);
+    cursor: pointer; font-family: var(--sans); color: var(--ink-2);
+    transition: background 0.2s;
+  }
+  .lb-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .lb-empty {
+    padding: 48px 20px; text-align: center;
+    font-size: 13px; color: var(--ink-3);
+  }
+  .lb-empty-icon { font-size: 24px; margin-bottom: 10px; opacity: 0.4; }
+
+  footer {
+    padding: 32px 40px; border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer-brand { font-family: var(--serif); font-size: 16px; color: var(--ink-2); }
+  .footer-copy { font-size: 12px; color: var(--ink-3); }
+  .footer-links { display: flex; gap: 20px; list-style: none; }
+  .footer-links a { font-size: 12px; color: var(--ink-3); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--accent); }
+
+  @media (max-width: 700px) {
+    .panels { grid-template-columns: 1fr; }
+    nav, .page-header, .content, footer { padding-left: 20px; padding-right: 20px; }
+    .page-headline { font-size: 32px; }
+    .auth-gate { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <span class="nav-brand-name">OlyProbe</span>
+    <span class="nav-brand-by">by Computography Lab</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="download.html">Download</a></li>
+    <li><a href="cheats.html">Cheats</a></li>
+    <li><a href="community.html" class="active">Community</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <p class="page-eyebrow">Subscriber area</p>
+  <h1 class="page-headline">Community</h1>
+  <p class="page-sub">Submit your own setting cheats to the library, download cheats to your camera, and see who is contributing the most to the community. Subscription required for uploads and downloads.</p>
+</div>
+
+<div class="content">
+
+  <div class="auth-gate">
+    <div class="auth-gate-text">
+      <p class="auth-gate-title">Subscriber access</p>
+      <p class="auth-gate-body">Enter your email address to receive a confirmation link. If you are not yet a subscriber, you can sign up on the <a href="download.html" style="color:var(--accent);">Download page</a> — it is free.</p>
+    </div>
+    <div>
+      <div class="auth-form">
+        <input type="email" placeholder="your@email.com">
+        <button class="btn-primary">Send confirmation link</button>
+      </div>
+      <p class="auth-note">A confirmation link will be sent to your email. No password needed. Not yet subscribed? <a href="download.html">Subscribe free on the Download page.</a></p>
+    </div>
+  </div>
+
+  <p class="section-label">Upload and download</p>
+  <div class="panels">
+
+    <div class="panel">
+      <div class="panel-header">
+        <p class="panel-title">&#8593; Submit a setting cheat</p>
+        <p class="panel-desc">Share your camera settings with the community. Select a category, add a brief description, upload an example photo, then connect your camera and capture the current settings.</p>
+      </div>
+      <div class="panel-body">
+        <div class="field">
+          <label class="field-label">Category <span class="req">*</span></label>
+          <select>
+            <option value="">Select category...</option>
+            <option>Landscape</option><option>Portrait</option><option>Wildlife</option>
+            <option>Architecture</option><option>Street</option><option>Macro</option>
+            <option>Astrophotography</option><option>Long exposure</option><option>Night</option>
+            <option>Sports/Action</option><option>Seascape</option><option>Forest</option>
+            <option>Weather/Storm</option><option>Wedding/Event</option><option>Product</option>
+            <option>Still life</option><option>Food</option><option>Fashion</option>
+            <option>Abstract</option><option>Fine art</option><option>Time-lapse</option>
+            <option>High speed</option><option>HDR</option><option>Live composite</option>
+            <option>Focus bracketing</option><option>Exposure bracketing</option>
+            <option>Multi-exposure</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Description <span class="req">*</span> <span class="opt">~20 characters</span></label>
+          <input type="text" placeholder="e.g. moonlit night scene" maxlength="30">
+        </div>
+        <div class="field">
+          <label class="field-label">Example photo <span class="req">*</span></label>
+          <div class="upload-zone" onclick="this.querySelector('input').click()">
+            <span class="upload-icon">&#8679;</span>
+            <p class="upload-text">Click to upload a JPEG captured with these settings</p>
+            <p class="upload-hint">JPEG only · max 20MB</p>
+            <input type="file" accept="image/jpeg" style="display:none" onchange="handlePhoto(this)">
+          </div>
+          <div id="photo-preview" style="display:none; margin-top:8px; font-size:12px; color:var(--accent-mid); padding:6px 10px; background:var(--accent-light); border-radius:4px;"></div>
+        </div>
+        <div class="capture-box">
+          <p class="capture-title">&#128247; Camera settings capture</p>
+          <p class="capture-body">Connect your camera via USB and click below to capture the current settings. Set your camera up exactly as intended for this cheat before capturing.</p>
+          <p class="capture-status" id="capture-status">No camera connected</p>
+          <button class="btn-full" onclick="connectCamera()">&#128275; Connect camera and capture settings</button>
+        </div>
+        <button class="btn-full accent" style="margin-top:14px;">Submit cheat to library</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <p class="panel-title">&#8595; Download a cheat</p>
+        <p class="panel-desc">Download a selected cheat from the library as a PDF reference sheet, or apply it directly to a connected camera. A compatibility report is shown when cameras differ.</p>
+      </div>
+      <div class="panel-body">
+        <div id="selected-cheat-display">
+          <div class="no-selection">No cheat selected. <a href="cheats.html">Browse the library</a> and click Download on any cheat to continue here.</div>
+        </div>
+        <button class="btn-full" id="dl-pdf-btn" disabled style="opacity:0.4; cursor:not-allowed;">&#128196; Download as PDF</button>
+        <button class="btn-full accent" id="dl-dtc-btn" disabled style="opacity:0.4; cursor:not-allowed; margin-top:8px;">&#128247; Download to camera (DTC)</button>
+
+        <div class="compat-box">
+          <p class="compat-title">Compatibility check</p>
+          <div class="compat-row">
+            <span class="compat-row-label">Cheat source camera</span>
+            <span class="compat-row-val missing" id="compat-source">—</span>
+          </div>
+          <div class="compat-row">
+            <span class="compat-row-label">Your connected camera</span>
+            <span class="compat-row-val missing" id="compat-target">not connected</span>
+          </div>
+          <div id="compat-result" style="display:none; margin-top:10px; padding:10px; background:var(--paper-2); border-radius:6px; font-size:12px; color:var(--ink-2); line-height:1.6;"></div>
+          <button class="btn-full" style="margin-top:10px;" onclick="connectForCompat()">&#128275; Connect camera to check compatibility</button>
+          <p class="compat-note">Compatibility checking compares the cheat's source camera capabilities against your connected camera. Available for probed camera models only. Both a PDF and a compatibility report are always included with a DTC download.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="leaderboard">
+    <div class="lb-header">
+      <p class="lb-title">&#127942; Contributor leaderboard</p>
+      <div class="lb-tabs">
+        <button class="lb-tab active" onclick="setLbTab('submissions', this)">By submissions</button>
+        <button class="lb-tab" onclick="setLbTab('downloads', this)">By downloads</button>
+        <button class="lb-tab" onclick="setLbTab('combined', this)">Combined</button>
+      </div>
+    </div>
+    <div class="lb-empty">
+      <p class="lb-empty-icon">&#9202;</p>
+      <p>The leaderboard will populate as community submissions arrive. Be the first — submit a cheat above.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span class="footer-brand">OlyProbe</span>
+  <ul class="footer-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="download.html">Download</a></li>
+    <li><a href="cheats.html">Cheats</a></li>
+    <li><a href="community.html">Community</a></li>
+  </ul>
+  <span class="footer-copy">© 2025 Computography Lab</span>
+</footer>
+
+<script>
+function handlePhoto(input) {
+  if(input.files && input.files[0]) {
+    var p = document.getElementById('photo-preview');
+    p.textContent = '✓ ' + input.files[0].name + ' selected';
+    p.style.display = 'block';
+  }
+}
+
+function connectCamera() {
+  var s = document.getElementById('capture-status');
+  s.textContent = 'Connecting...';
+  setTimeout(function() {
+    s.textContent = 'Camera not found. Make sure it is connected via USB and powered on.';
+    s.style.color = 'var(--ink-3)';
+  }, 1500);
+}
+
+function connectForCompat() {
+  document.getElementById('compat-target').textContent = 'Connecting...';
+  document.getElementById('compat-target').classList.remove('missing');
+  setTimeout(function() {
+    document.getElementById('compat-target').textContent = 'not connected';
+    document.getElementById('compat-target').classList.add('missing');
+  }, 1500);
+}
+
+function setLbTab(tab, el) {
+  document.querySelectorAll('.lb-tab').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+var urlParams = new URLSearchParams(window.location.search);
+var cheatId = urlParams.get('cheat');
+if(cheatId) {
+  var CHEATS = [
+    { id:'1', cat:'Landscape', desc:'moonlit night scene', camera:'OM-1 II', date:'2025-11-02', by:'J. Smith' },
+    { id:'2', cat:'Wildlife', desc:'fast birds in flight', camera:'OM-1', date:'2025-10-18', by:'A. Patel' },
+    { id:'3', cat:'Architecture', desc:'interior natural light', camera:'E-M1 III', date:'2025-10-05', by:'M. Chen' },
+  ];
+  var found = CHEATS.find(function(c){return c.id===cheatId;});
+  if(found) {
+    document.getElementById('selected-cheat-display').innerHTML =
+      '<div class="selected-cheat"><p class="selected-cheat-label">Selected cheat</p><p class="selected-cheat-name">'+found.cat+' · '+found.desc+'</p><p class="selected-cheat-meta">'+found.camera+' · '+found.by+' · '+found.date+'</p></div>';
+    document.getElementById('compat-source').textContent = found.camera;
+    document.getElementById('compat-source').classList.remove('missing');
+    var dlPdf = document.getElementById('dl-pdf-btn');
+    var dlDtc = document.getElementById('dl-dtc-btn');
+    dlPdf.disabled = false; dlPdf.style.opacity = '1'; dlPdf.style.cursor = 'pointer';
+    dlDtc.disabled = false; dlDtc.style.opacity = '1'; dlDtc.style.cursor = 'pointer';
+  }
+}
+</script>
+
+</body>
+</html>
