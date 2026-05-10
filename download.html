@@ -29,13 +29,11 @@
 
   nav {
     position: sticky; top: 0; z-index: 100;
-    background: var(--paper);
-    border-bottom: 1px solid var(--rule);
+    background: var(--paper); border-bottom: 1px solid var(--rule);
     padding: 0 40px;
     display: flex; align-items: center; justify-content: space-between;
     height: 60px;
   }
-
   .nav-brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; color: inherit; }
   .nav-brand-name { font-family: var(--serif); font-size: 22px; letter-spacing: -0.02em; }
   .nav-brand-by { font-size: 11px; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
@@ -46,175 +44,192 @@
 
   .page-header {
     padding: 72px 40px 56px;
-    max-width: 900px;
-    margin: 0 auto;
+    max-width: 900px; margin: 0 auto;
     border-bottom: 1px solid var(--rule);
   }
-
   .page-eyebrow {
     font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
     color: var(--ink-3); font-weight: 500; margin-bottom: 16px;
   }
-
   .page-headline {
-    font-family: var(--serif);
-    font-size: 44px; letter-spacing: -0.02em; line-height: 1.1;
+    font-family: var(--serif); font-size: 44px;
+    letter-spacing: -0.02em; line-height: 1.1;
     color: var(--ink); margin-bottom: 16px;
   }
-
   .page-sub {
     font-size: 15px; color: var(--ink-2); line-height: 1.7;
     font-weight: 300; max-width: 560px;
   }
 
-  .content {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 56px 40px;
-  }
+  .content { max-width: 900px; margin: 0 auto; padding: 56px 40px; }
 
   .section-label {
     font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
     color: var(--ink-3); font-weight: 500; margin-bottom: 24px;
   }
 
-  /* PLATFORM CARDS */
+  /* PLATFORMS */
   .platforms {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 64px;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-bottom: 64px;
   }
-
   .platform-card {
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    padding: 28px 24px;
-    background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 8px;
+    padding: 28px 24px; background: var(--paper);
     display: flex; flex-direction: column; align-items: center;
-    text-align: center; gap: 12px;
+    text-align: center; gap: 10px;
   }
-
   .platform-icon {
-    width: 44px; height: 44px;
-    background: var(--paper-2);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
+    width: 44px; height: 44px; background: var(--paper-2);
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 18px;
   }
-
-  .platform-name {
-    font-size: 14px; font-weight: 500; color: var(--ink);
-  }
-
-  .platform-version {
-    font-size: 11px; color: var(--ink-3);
-  }
-
+  .platform-name { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .platform-version { font-size: 11px; color: var(--ink-3); }
   .platform-warning {
-    font-size: 11px; color: var(--ink-3);
-    background: var(--paper-2);
-    border-radius: 4px; padding: 6px 10px;
-    line-height: 1.5; width: 100%;
+    font-size: 11px; color: var(--ink-3); background: var(--paper-2);
+    border-radius: 4px; padding: 6px 10px; line-height: 1.5; width: 100%;
   }
-
+  .platform-warning code { font-size: 10px; font-family: 'Courier New', monospace; }
   .btn-download {
-    background: var(--accent);
-    color: #fff;
-    padding: 10px 20px;
-    border: none; border-radius: 4px;
+    background: var(--accent); color: #fff;
+    padding: 10px 20px; border: none; border-radius: 4px;
     font-family: var(--sans); font-size: 13px; font-weight: 500;
     letter-spacing: 0.04em; cursor: pointer;
     text-decoration: none; display: inline-block;
-    transition: background 0.2s; width: 100%;
-    text-align: center;
+    transition: background 0.2s; width: 100%; text-align: center;
   }
-
   .btn-download:hover { background: #234830; }
 
   /* STEPS */
   .steps { margin-bottom: 64px; }
-
   .steps-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    overflow: hidden;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0; border: 1px solid var(--rule);
+    border-radius: 8px; overflow: hidden;
   }
-
   .step {
-    padding: 24px 28px;
-    border-bottom: 1px solid var(--rule);
+    padding: 24px 28px; border-bottom: 1px solid var(--rule);
     display: flex; gap: 16px; align-items: flex-start;
   }
-
   .step:nth-child(odd) { border-right: 1px solid var(--rule); }
   .step:nth-last-child(-n+2) { border-bottom: none; }
-
   .step-num {
-    font-family: var(--serif);
-    font-size: 28px; color: var(--paper-3);
-    line-height: 1; flex-shrink: 0; width: 32px;
+    font-family: var(--serif); font-size: 28px;
+    color: var(--paper-3); line-height: 1; flex-shrink: 0; width: 32px;
   }
+  .step-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+  .step-body { font-size: 12px; color: var(--ink-2); line-height: 1.6; font-weight: 300; }
 
-  .step-content {}
-
-  .step-title {
-    font-size: 13px; font-weight: 500; color: var(--ink);
-    margin-bottom: 4px;
+  /* ACCESS TIERS */
+  .tiers {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 48px;
   }
-
-  .step-body {
-    font-size: 12px; color: var(--ink-2);
-    line-height: 1.6; font-weight: 300;
+  .tier-card {
+    border: 1px solid var(--rule); border-radius: 8px;
+    overflow: hidden;
   }
+  .tier-card.featured { border-color: var(--accent-mid); }
+  .tier-header {
+    padding: 16px 20px;
+    background: var(--paper-2);
+    border-bottom: 1px solid var(--rule);
+  }
+  .tier-card.featured .tier-header {
+    background: var(--accent); 
+  }
+  .tier-name {
+    font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 2px;
+  }
+  .tier-card.featured .tier-name { color: #fff; }
+  .tier-desc { font-size: 11px; color: var(--ink-3); }
+  .tier-card.featured .tier-desc { color: rgba(255,255,255,0.7); }
+  .tier-body { padding: 16px 20px; }
+  .tier-feature {
+    display: flex; gap: 8px; align-items: flex-start;
+    font-size: 12px; color: var(--ink-2); line-height: 1.5;
+    padding: 5px 0; border-bottom: 1px solid var(--rule);
+    font-weight: 300;
+  }
+  .tier-feature:last-child { border-bottom: none; }
+  .tier-check { color: var(--accent-mid); flex-shrink: 0; font-size: 14px; }
+  .tier-dash { color: var(--paper-3); flex-shrink: 0; font-size: 14px; }
+
+  /* SUBSCRIPTION FORM */
+  .subscribe-section {
+    background: var(--accent-light);
+    border: 1px solid var(--rule); border-radius: 8px;
+    padding: 36px; margin-bottom: 48px;
+  }
+  .subscribe-headline {
+    font-family: var(--serif); font-size: 28px;
+    letter-spacing: -0.01em; color: var(--ink); margin-bottom: 8px;
+  }
+  .subscribe-sub {
+    font-size: 14px; color: var(--ink-2); line-height: 1.7;
+    font-weight: 300; margin-bottom: 28px; max-width: 560px;
+  }
+  .form-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 10px;
+  }
+  .form-field { display: flex; flex-direction: column; gap: 4px; }
+  .form-field.full { grid-column: 1 / -1; }
+  .form-label {
+    font-size: 11px; font-weight: 500; color: var(--ink-2);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .form-label .required { color: var(--accent-mid); margin-left: 2px; }
+  .form-label .optional { color: var(--ink-3); font-weight: 300; text-transform: none; letter-spacing: 0; font-size: 10px; margin-left: 4px; }
+  .form-field input,
+  .form-field textarea {
+    background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 10px 14px;
+    font-family: var(--sans); font-size: 13px; color: var(--ink);
+    width: 100%; outline: none; transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .form-field input:focus,
+  .form-field textarea:focus { border-color: var(--accent-mid); }
+  .form-field input::placeholder,
+  .form-field textarea::placeholder { color: var(--ink-3); }
+  .form-field textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+  .form-note {
+    font-size: 11px; color: var(--ink-3); line-height: 1.6; margin-bottom: 16px;
+  }
+  .btn-subscribe {
+    background: var(--accent); color: #fff;
+    padding: 12px 28px; border: none; border-radius: 4px;
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.04em; cursor: pointer;
+    transition: background 0.2s; display: inline-block;
+  }
+  .btn-subscribe:hover { background: #234830; }
 
   /* SECURITY NOTE */
   .security-note {
-    background: var(--paper-2);
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    padding: 24px 28px;
-    margin-bottom: 64px;
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 8px; padding: 24px 28px; margin-bottom: 48px;
   }
-
-  .security-note-title {
-    font-size: 13px; font-weight: 500; color: var(--ink);
-    margin-bottom: 8px;
-  }
-
-  .security-note-body {
-    font-size: 13px; color: var(--ink-2);
-    line-height: 1.7; font-weight: 300;
-  }
+  .security-note-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 8px; }
+  .security-note-body { font-size: 13px; color: var(--ink-2); line-height: 1.7; font-weight: 300; }
+  .security-note-body a { color: var(--accent); }
 
   /* REQUIREMENTS */
-  .requirements {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
-
-  .req-card {
-    padding: 16px 20px;
-    border: 1px solid var(--rule); border-radius: 6px;
-  }
-
+  .requirements { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .req-card { padding: 16px 20px; border: 1px solid var(--rule); border-radius: 6px; }
   .req-title {
     font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
     color: var(--ink-3); font-weight: 500; margin-bottom: 8px;
   }
-
-  .req-item {
-    font-size: 12px; color: var(--ink-2); line-height: 1.8;
-  }
+  .req-item { font-size: 12px; color: var(--ink-2); line-height: 1.8; }
 
   footer {
     padding: 32px 40px; border-top: 1px solid var(--rule);
     display: flex; justify-content: space-between; align-items: center;
   }
-
   .footer-brand { font-family: var(--serif); font-size: 16px; color: var(--ink-2); }
   .footer-copy { font-size: 12px; color: var(--ink-3); }
   .footer-links { display: flex; gap: 20px; list-style: none; }
@@ -222,13 +237,14 @@
   .footer-links a:hover { color: var(--accent); }
 
   @media (max-width: 700px) {
-    .platforms, .requirements { grid-template-columns: 1fr; }
+    .platforms, .tiers, .requirements, .form-grid { grid-template-columns: 1fr; }
     .steps-grid { grid-template-columns: 1fr; }
     .step:nth-child(odd) { border-right: none; }
     .step:nth-last-child(-n+2) { border-bottom: 1px solid var(--rule); }
     .step:last-child { border-bottom: none; }
     nav, .page-header, .content, footer { padding-left: 20px; padding-right: 20px; }
     .page-headline { font-size: 32px; }
+    .subscribe-section { padding: 24px; }
   }
 </style>
 </head>
@@ -249,14 +265,13 @@
 <div class="page-header">
   <p class="page-eyebrow">Get started</p>
   <h1 class="page-headline">Download OlyProbe</h1>
-  <p class="page-sub">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Connect your Olympus camera via USB, run OlyProbe, and contribute your camera's capability data to the community library.</p>
+  <p class="page-sub">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Connect your Olympus or OM SYSTEM camera via USB, run OlyProbe, and discover everything your camera is capable of.</p>
 </div>
 
 <div class="content">
 
   <p class="section-label">Choose your platform</p>
   <div class="platforms">
-
     <div class="platform-card">
       <div class="platform-icon">⊞</div>
       <p class="platform-name">Windows</p>
@@ -264,23 +279,20 @@
       <p class="platform-warning">Windows may show a security warning. Click "More info" then "Run anyway" — see note below.</p>
       <a href="#" class="btn-download">Download .exe</a>
     </div>
-
     <div class="platform-card">
       <div class="platform-icon">⌘</div>
       <p class="platform-name">macOS</p>
       <p class="platform-version">macOS 12 or later · Apple Silicon &amp; Intel</p>
-      <p class="platform-warning">macOS may block the app. Go to System Settings → Privacy &amp; Security to allow it.</p>
+      <p class="platform-warning">macOS may block the app on first launch. Go to System Settings → Privacy &amp; Security to allow it.</p>
       <a href="#" class="btn-download">Download .dmg</a>
     </div>
-
     <div class="platform-card">
       <div class="platform-icon">⬡</div>
       <p class="platform-name">Linux</p>
       <p class="platform-version">Ubuntu 20.04+ · Debian · Raspberry Pi OS</p>
-      <p class="platform-warning">Run <code style="font-size:11px;">chmod +x olyprobe</code> before launching.</p>
+      <p class="platform-warning">Run <code>chmod +x olyprobe</code> in your terminal before launching.</p>
       <a href="#" class="btn-download">Download binary</a>
     </div>
-
   </div>
 
   <p class="section-label">How to use OlyProbe</p>
@@ -288,38 +300,112 @@
     <div class="steps-grid">
       <div class="step">
         <span class="step-num">1</span>
-        <div class="step-content">
+        <div>
           <p class="step-title">Connect your camera via USB</p>
           <p class="step-body">Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna.</p>
         </div>
       </div>
       <div class="step">
         <span class="step-num">2</span>
-        <div class="step-content">
+        <div>
           <p class="step-title">Set camera to tether mode</p>
           <p class="step-body">Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
         </div>
       </div>
       <div class="step">
         <span class="step-num">3</span>
-        <div class="step-content">
+        <div>
           <p class="step-title">Run OlyProbe</p>
           <p class="step-body">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur excepteur.</p>
         </div>
       </div>
       <div class="step">
         <span class="step-num">4</span>
-        <div class="step-content">
-          <p class="step-title">Review and submit</p>
-          <p class="step-body">Sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum sed perspiciatis.</p>
+        <div>
+          <p class="step-title">Review and optionally submit</p>
+          <p class="step-body">Sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum perspiciatis.</p>
         </div>
       </div>
     </div>
   </div>
 
+  <p class="section-label">What you get</p>
+  <div class="tiers">
+    <div class="tier-card">
+      <div class="tier-header">
+        <p class="tier-name">Anonymous use</p>
+        <p class="tier-desc">No registration required</p>
+      </div>
+      <div class="tier-body">
+        <div class="tier-feature"><span class="tier-check">✓</span> Probe your camera via USB</div>
+        <div class="tier-feature"><span class="tier-check">✓</span> Complete capabilities map for your camera</div>
+        <div class="tier-feature"><span class="tier-check">✓</span> All controls and allowable values</div>
+        <div class="tier-feature"><span class="tier-check">✓</span> Cross-camera comparison with community data</div>
+        <div class="tier-feature"><span class="tier-dash">–</span> Current settings capture (Setting Cheats)</div>
+        <div class="tier-feature"><span class="tier-dash">–</span> Access to Setting Cheats community library</div>
+        <div class="tier-feature"><span class="tier-dash">–</span> Upload and share your own Setting Cheats</div>
+        <div class="tier-feature"><span class="tier-dash">–</span> Product updates and notices</div>
+        <div class="tier-feature"><span class="tier-dash">–</span> Direct email contact with Computography Lab</div>
+      </div>
+    </div>
+    <div class="tier-card featured">
+      <div class="tier-header">
+        <p class="tier-name">Subscriber</p>
+        <p class="tier-desc">Free — name and email required</p>
+      </div>
+      <div class="tier-body">
+        <div class="tier-feature"><span class="tier-check">✓</span> Probe your camera via USB</div>
+        <div class="tier-feature"><span class="tier-check">✓</span> Complete capabilities map for your camera</div>
+        <div class="tier-feature"><span class="tier-check">✓</span> All controls and allowable values</div>
+        <div class="tier-feature"><span class="tier-check">✓</span> Cross-camera comparison with community data</div>
+        <div class="tier-feature"><span class="tier-check">✓</span> Current settings capture (Setting Cheats)</div>
+        <div class="tier-feature"><span class="tier-check">✓</span> Access to Setting Cheats community library</div>
+        <div class="tier-feature"><span class="tier-check">✓</span> Upload and share your own Setting Cheats</div>
+        <div class="tier-feature"><span class="tier-check">✓</span> Product updates and notices</div>
+        <div class="tier-feature"><span class="tier-check">✓</span> Direct email contact with Computography Lab</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subscribe-section">
+    <h2 class="subscribe-headline">Subscribe to OlyProbe</h2>
+    <p class="subscribe-sub">Join the Computography Lab community of high-intent photographers. Subscribers get full access to the Setting Cheats library — a growing collection of clever and complex settings recipes created and shared by fellow OM SYSTEM and Olympus photographers.</p>
+
+    <div class="form-grid">
+      <div class="form-field">
+        <label class="form-label" for="fname">First name <span class="required">*</span></label>
+        <input type="text" id="fname" name="fname" placeholder="First name" required>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="lname">Last name <span class="required">*</span></label>
+        <input type="text" id="lname" name="lname" placeholder="Last name" required>
+      </div>
+      <div class="form-field full">
+        <label class="form-label" for="email">Email address <span class="required">*</span></label>
+        <input type="email" id="email" name="email" placeholder="your@email.com" required>
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="country">Country <span class="optional">(optional)</span></label>
+        <input type="text" id="country" name="country" placeholder="Country">
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="city">City <span class="optional">(optional)</span></label>
+        <input type="text" id="city" name="city" placeholder="City">
+      </div>
+      <div class="form-field full">
+        <label class="form-label" for="cameras">Cameras you own <span class="optional">(optional)</span></label>
+        <textarea id="cameras" name="cameras" placeholder="e.g. OM-1 Mark II, E-M1 Mark III"></textarea>
+      </div>
+    </div>
+
+    <p class="form-note">Fields marked <span style="color:var(--accent-mid)">*</span> are required. Your information will never be shared with third parties. You may contact us at any time at <a href="mailto:olyprobe@outlook.com" style="color:var(--accent)">olyprobe@outlook.com</a> to update or remove your details.</p>
+
+    <button class="btn-subscribe" onclick="handleSubscribe()">Subscribe and get full access</button>
+  </div>
+
   <div class="security-note">
     <p class="security-note-title">About the security warning</p>
-    <p class="security-note-body">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore. The source code is publicly available at github.com/OlyProbe/olyprobe for review.</p>
+    <p class="security-note-body">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. OlyProbe does not connect to the internet during the probe process — it communicates only with your locally connected camera. The tool is open and we are happy to answer any questions at <a href="mailto:olyprobe@outlook.com">olyprobe@outlook.com</a>.</p>
   </div>
 
   <p class="section-label">System requirements</p>
@@ -340,7 +426,7 @@
       <p class="req-title">Not required</p>
       <p class="req-item">Python installation</p>
       <p class="req-item">Technical knowledge</p>
-      <p class="req-item">Account or registration</p>
+      <p class="req-item">Payment or credit card</p>
     </div>
   </div>
 
@@ -355,6 +441,48 @@
   </ul>
   <span class="footer-copy">© 2025 Computography Lab</span>
 </footer>
+
+<script>
+function handleSubscribe() {
+  var fname = document.getElementById('fname').value.trim();
+  var lname = document.getElementById('lname').value.trim();
+  var email = document.getElementById('email').value.trim();
+  if (!fname || !lname || !email) {
+    alert('Please fill in your first name, last name, and email address to subscribe.');
+    return;
+  }
+  var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRe.test(email)) {
+    alert('Please enter a valid email address.');
+    return;
+  }
+  var data = {
+    first_name: fname,
+    last_name: lname,
+    email: email,
+    country: document.getElementById('country').value.trim(),
+    city: document.getElementById('city').value.trim(),
+    cameras: document.getElementById('cameras').value.trim(),
+    type: 'subscription',
+    date: new Date().toISOString()
+  };
+  fetch('https://script.google.com/macros/s/AKfycbwzlR6M5obHf1MC1bRTxouPs0yq0YBij-6Q-sXWD9duSoYj7WmJEThS0Ml0w1wAubRC/exec', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(r) {
+    if (r.status === 'ok') {
+      alert('Thank you for subscribing! Welcome to the Computography Lab community.');
+    } else {
+      alert('Something went wrong. Please try again or email olyprobe@outlook.com.');
+    }
+  })
+  .catch(function() {
+    alert('Something went wrong. Please try again or email olyprobe@outlook.com.');
+  });
+}
+</script>
 
 </body>
 </html>
