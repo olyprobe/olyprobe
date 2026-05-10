@@ -243,8 +243,8 @@
 
 <div class="page-header">
   <p class="page-eyebrow">Subscriber area</p>
-  <h1 class="page-headline">Community</h1>
-  <p class="page-sub">Submit your own setting cheats to the library, download cheats to your camera, and see who is contributing the most to the community. Subscription required for uploads and downloads.</p>
+  <h1 class="page-headline">Computography Community</h1>
+  <p class="page-sub">Submit your own Setting Cheats to the library, download Cheats to your camera, and see who is contributing the most to the community. Subscription required for uploads and downloads.</p>
 </div>
 
 <div class="content">
@@ -268,7 +268,7 @@
 
     <div class="panel">
       <div class="panel-header">
-        <p class="panel-title">&#8593; Submit a setting cheat</p>
+        <p class="panel-title">&#8593; Submit a Setting Cheat</p>
         <p class="panel-desc">Share your camera settings with the community. Select a category, add a brief description, upload an example photo, then connect your camera and capture the current settings.</p>
       </div>
       <div class="panel-body">
@@ -304,22 +304,22 @@
         </div>
         <div class="capture-box">
           <p class="capture-title">&#128247; Camera settings capture</p>
-          <p class="capture-body">Connect your camera via USB and click below to capture the current settings. Set your camera up exactly as intended for this cheat before capturing.</p>
+          <p class="capture-body">Connect your camera via USB and click below to capture the current settings. Set your camera up exactly as intended for this Cheat before capturing.</p>
           <p class="capture-status" id="capture-status">No camera connected</p>
           <button class="btn-full" onclick="connectCamera()">&#128275; Connect camera and capture settings</button>
         </div>
-        <button class="btn-full accent" style="margin-top:14px;">Submit cheat to library</button>
+        <button class="btn-full accent" style="margin-top:14px;">Submit Cheat to library</button>
       </div>
     </div>
 
     <div class="panel">
       <div class="panel-header">
-        <p class="panel-title">&#8595; Download a cheat</p>
-        <p class="panel-desc">Download a selected cheat from the library as a PDF reference sheet, or apply it directly to a connected camera. A compatibility report is shown when cameras differ.</p>
+        <p class="panel-title">&#8595; Download a Cheat</p>
+        <p class="panel-desc">Download a selected Cheat from the library as a PDF reference sheet, or apply it directly to a connected camera. A compatibility report is shown when cameras differ.</p>
       </div>
       <div class="panel-body">
         <div id="selected-cheat-display">
-          <div class="no-selection">No cheat selected. <a href="cheats.html">Browse the library</a> and click Download on any cheat to continue here.</div>
+          <div class="no-selection">No Cheat selected. <a href="cheats.html">Browse the library</a> and click Download on any Cheat to continue here.</div>
         </div>
         <button class="btn-full" id="dl-pdf-btn" disabled style="opacity:0.4; cursor:not-allowed;">&#128196; Download as PDF</button>
         <button class="btn-full accent" id="dl-dtc-btn" disabled style="opacity:0.4; cursor:not-allowed; margin-top:8px;">&#128247; Download to camera (DTC)</button>
@@ -336,7 +336,7 @@
           </div>
           <div id="compat-result" style="display:none; margin-top:10px; padding:10px; background:var(--paper-2); border-radius:6px; font-size:12px; color:var(--ink-2); line-height:1.6;"></div>
           <button class="btn-full" style="margin-top:10px;" onclick="connectForCompat()">&#128275; Connect camera to check compatibility</button>
-          <p class="compat-note">Compatibility checking compares the cheat's source camera capabilities against your connected camera. Available for probed camera models only. Both a PDF and a compatibility report are always included with a DTC download.</p>
+          <p class="compat-note">Compatibility checking compares the Cheat's source camera capabilities against your connected camera. Available for probed camera models only. Both a PDF and a compatibility report are always included with a DTC download.</p>
         </div>
       </div>
     </div>
@@ -354,7 +354,7 @@
     </div>
     <div class="lb-empty">
       <p class="lb-empty-icon">&#9202;</p>
-      <p>The leaderboard will populate as community submissions arrive. Be the first — submit a cheat above.</p>
+      <p>The leaderboard will populate as community submissions arrive. Be the first — submit a Cheat above.</p>
     </div>
   </div>
 
@@ -414,7 +414,7 @@ if(cheatId) {
   var found = CHEATS.find(function(c){return c.id===cheatId;});
   if(found) {
     document.getElementById('selected-cheat-display').innerHTML =
-      '<div class="selected-cheat"><p class="selected-cheat-label">Selected cheat</p><p class="selected-cheat-name">'+found.cat+' · '+found.desc+'</p><p class="selected-cheat-meta">'+found.camera+' · '+found.by+' · '+found.date+'</p></div>';
+      '<div class="selected-cheat"><p class="selected-cheat-label">Selected Cheat</p><p class="selected-cheat-name">'+found.cat+' · '+found.desc+'</p><p class="selected-cheat-meta">'+found.camera+' · '+found.by+' · '+found.date+'</p></div>';
     document.getElementById('compat-source').textContent = found.camera;
     document.getElementById('compat-source').classList.remove('missing');
     var dlPdf = document.getElementById('dl-pdf-btn');
