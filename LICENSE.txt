@@ -1,0 +1,17 @@
+OlyProbe — Setting Cheats for Olympus and OM SYSTEM Cameras
+Copyright (c) 2025 Computography Lab
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software to use it for personal and commercial photography purposes.
+
+This software is provided "as is", without warranty of any kind, express or
+implied. In no event shall Computography Lab be liable for any claim, damages,
+or other liability arising from the use of this software.
+
+OlyProbe is not affiliated with, endorsed by, or in any way officially
+connected with OM Digital Solutions Corporation, Olympus Corporation, or
+any of their subsidiaries or affiliates. All camera brand names and model
+names are trademarks of their respective owners.
+
+This is beta software. Use at your own risk. Camera settings applied via
+OlyProbe are your responsibility to verify before shooting.
