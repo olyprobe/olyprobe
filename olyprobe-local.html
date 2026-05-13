@@ -1113,9 +1113,11 @@ function deleteCheat(id, desc) {
 }
 
 function confirmDialogAction() {
+  var idToDelete = pendingDeleteId;
+  var action = state.dialogAction;
   closeDialog();
-  if (state.dialogAction === 'delete' && pendingDeleteId) {
-    fetch('/api/cheats/' + pendingDeleteId, { method: 'DELETE' })
+  if (action === 'delete' && idToDelete) {
+    fetch('/api/cheats/' + idToDelete, { method: 'DELETE' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.ok) {
