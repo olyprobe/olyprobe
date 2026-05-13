@@ -245,6 +245,30 @@
     display: flex; flex-direction: column; gap: 2px;
   }
 
+  /* Upload pending checkbox row */
+  .card-upload-row {
+    padding: 6px 14px;
+    border-top: 1px solid var(--rule);
+    display: flex; align-items: center; gap: 8px;
+    background: var(--paper);
+  }
+  .card-upload-label {
+    font-size: 11px; color: var(--ink-3);
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; flex: 1;
+    user-select: none;
+  }
+  .card-upload-label input[type="checkbox"] {
+    width: 13px; height: 13px; cursor: pointer;
+    accent-color: var(--accent);
+  }
+  .card-uploaded-badge {
+    font-size: 10px; padding: 2px 7px; border-radius: 10px;
+    background: var(--accent-light); color: var(--accent);
+    border: 1px solid var(--accent-mid); font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+
   .card-actions {
     padding: 10px 14px;
     border-top: 1px solid var(--rule);
@@ -261,6 +285,48 @@
   }
   .card-btn:hover { background: var(--accent-light); border-color: var(--accent-mid); color: var(--accent); }
   .card-btn.danger:hover { background: #f5e8e8; border-color: #c87070; color: var(--status-err); }
+
+  /* Sync status bar */
+  .sync-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; border-radius: 6px;
+    background: var(--paper-2); border: 1px solid var(--rule);
+    margin-bottom: 20px; font-size: 12px; color: var(--ink-3);
+  }
+  .sync-bar.has-pending { background: var(--status-warn-bg); border-color: #c8a000; color: var(--status-warn); }
+  .sync-bar.all-synced  { background: var(--accent-light); border-color: var(--accent-mid); color: var(--accent); }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .btn-sync-now {
+    margin-left: auto; padding: 3px 10px;
+    font-family: var(--sans); font-size: 11px; font-weight: 500;
+    background: var(--paper); border: 1px solid var(--rule);
+    border-radius: 3px; cursor: pointer; color: var(--ink-2);
+    transition: background 0.15s;
+  }
+  .btn-sync-now:hover { background: var(--paper-3); }
+
+  /* Drag-drop overlay */
+  .drop-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 150;
+    background: rgba(45, 90, 61, 0.12);
+    border: 3px dashed var(--accent-mid);
+    align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .drop-overlay.active { display: flex; }
+  .drop-overlay-inner {
+    background: var(--paper); border-radius: 12px;
+    padding: 40px 60px; text-align: center;
+    border: 1px solid var(--accent-mid);
+    box-shadow: 0 8px 40px rgba(45,90,61,0.15);
+  }
+  .drop-overlay-icon { font-size: 40px; margin-bottom: 12px; }
+  .drop-overlay-title {
+    font-family: var(--serif); font-size: 24px;
+    color: var(--ink); margin-bottom: 6px;
+  }
+  .drop-overlay-sub { font-size: 13px; color: var(--ink-3); font-weight: 300; }
 
   /* Empty state */
   .empty-state {
@@ -546,6 +612,15 @@
   </div>
 </header>
 
+<!-- ── DROP OVERLAY ── -->
+<div class="drop-overlay" id="drop-overlay">
+  <div class="drop-overlay-inner">
+    <div class="drop-overlay-icon">&#8659;</div>
+    <p class="drop-overlay-title">Drop to import</p>
+    <p class="drop-overlay-sub">Release to add this .cheat file to your library</p>
+  </div>
+</div>
+
 <!-- ── MAIN ── -->
 <main class="app-main">
 
@@ -556,9 +631,18 @@
         <h1 class="view-headline">Setting Cheats</h1>
         <p class="view-subhead">Saved to <code id="folder-path">~/OlyProbe/Cheats/</code></p>
       </div>
-      <button class="btn-primary" id="btn-probe" onclick="startProbe()">
-        <span>&#9679;</span> Probe camera
-      </button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="openCheatsFolder()">&#128193; Open folder</button>
+        <button class="btn-primary" id="btn-probe" onclick="startProbe()">
+          <span>&#9679;</span> Probe camera
+        </button>
+      </div>
+    </div>
+
+    <div class="sync-bar" id="sync-bar" style="display:none">
+      <span class="sync-dot"></span>
+      <span id="sync-bar-text">Checking sync status...</span>
+      <button class="btn-sync-now" id="btn-sync-now" onclick="syncNow()" style="display:none">Sync now</button>
     </div>
 
     <div class="cheat-grid" id="cheat-grid">
@@ -702,8 +786,10 @@ var state = {
 window.addEventListener('load', function() {
   checkOnline();
   loadCheats();
-  window.addEventListener('online',  function() { state.isOnline = true;  updateOnlineBadges(); });
-  window.addEventListener('offline', function() { state.isOnline = false; updateOnlineBadges(); });
+  updateSyncBar();
+  setInterval(updateSyncBar, 30000);
+  window.addEventListener('online',  function() { state.isOnline = true;  updateOnlineBadges(); updateSyncBar(); });
+  window.addEventListener('offline', function() { state.isOnline = false; updateOnlineBadges(); updateSyncBar(); });
 });
 
 // ── ONLINE STATUS ─────────────────────────────────────────────
@@ -854,6 +940,24 @@ function renderLibrary() {
   state.cheats.forEach(function(c) {
     var card = document.createElement('div');
     card.className = 'cheat-card';
+
+    var uploadRow = '';
+    if (c.uploaded) {
+      uploadRow =
+        '<div class="card-upload-row">' +
+          '<span class="card-uploaded-badge">&#10003; Uploaded</span>' +
+        '</div>';
+    } else {
+      uploadRow =
+        '<div class="card-upload-row">' +
+          '<label class="card-upload-label">' +
+            '<input type="checkbox" ' + (c.upload_pending ? 'checked' : '') +
+              ' onchange="setPending(\'' + esc(c.id) + '\', this.checked)">' +
+            'Share to community' +
+          '</label>' +
+        '</div>';
+    }
+
     card.innerHTML =
       '<div class="card-color-band" style="background:' + catColor(c.category) + '"></div>' +
       '<div class="card-body">' +
@@ -864,6 +968,7 @@ function renderLibrary() {
           '<span>' + esc(c.captured_at ? c.captured_at.slice(0,10) : '') + '</span>' +
         '</div>' +
       '</div>' +
+      uploadRow +
       '<div class="card-actions">' +
         '<button class="card-btn" onclick="loadCheat(\'' + esc(c.id) + '\')">Load</button>' +
         '<button class="card-btn" onclick="addToCompare(\'' + esc(c.id) + '\')">Compare</button>' +
@@ -1079,6 +1184,149 @@ function renderControls(containerId, controls) {
   el.innerHTML = html;
 }
 
+// ── UPLOAD PENDING ────────────────────────────────────────────
+function setPending(id, pending) {
+  fetch('/api/cheats/' + id + '/set_pending', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pending: pending })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      toast(pending ? 'Marked for upload' : 'Removed from upload queue');
+      loadCheats();
+      updateSyncBar();
+    } else {
+      toast('Could not update: ' + (data.error || 'unknown error'));
+      loadCheats(); // reload to reset checkbox to actual state
+    }
+  })
+  .catch(function() {
+    toast('Could not update upload status');
+    loadCheats();
+  });
+}
+
+// ── OPEN FOLDER ───────────────────────────────────────────────
+function openCheatsFolder() {
+  fetch('/api/open_cheats_folder', { method: 'POST' })
+  .catch(function() { toast('Could not open folder'); });
+}
+
+// ── SYNC ──────────────────────────────────────────────────────
+function syncNow() {
+  fetch('/api/sync_now', { method: 'POST' })
+  .then(function() {
+    toast('Syncing...');
+    setTimeout(updateSyncBar, 3000);
+  })
+  .catch(function() {});
+}
+
+function updateSyncBar() {
+  fetch('/api/sync_status')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var bar     = document.getElementById('sync-bar');
+    var barText = document.getElementById('sync-bar-text');
+    var syncBtn = document.getElementById('btn-sync-now');
+    bar.style.display = 'flex';
+
+    if (!data.community_ready) {
+      bar.className = 'sync-bar';
+      barText.textContent = 'Community upload coming soon';
+      syncBtn.style.display = 'none';
+      return;
+    }
+    if (data.pending > 0 && data.online) {
+      bar.className = 'sync-bar has-pending';
+      barText.textContent = data.pending + ' cheat' + (data.pending > 1 ? 's' : '') + ' pending upload';
+      syncBtn.style.display = 'block';
+    } else if (data.pending > 0 && !data.online) {
+      bar.className = 'sync-bar has-pending';
+      barText.textContent = data.pending + ' cheat' + (data.pending > 1 ? 's' : '') + ' pending — reconnect to internet to sync';
+      syncBtn.style.display = 'none';
+    } else {
+      bar.className = 'sync-bar all-synced';
+      barText.textContent = 'All cheats synced';
+      syncBtn.style.display = 'none';
+    }
+  })
+  .catch(function() {});
+}
+
+// ── DRAG AND DROP ─────────────────────────────────────────────
+(function() {
+  var dropOverlay = document.getElementById('drop-overlay');
+  var dragCounter = 0;
+
+  document.addEventListener('dragenter', function(e) {
+    var hasCheat = Array.from(e.dataTransfer.items || []).some(function(item) {
+      return item.kind === 'file';
+    });
+    if (!hasCheat) return;
+    dragCounter++;
+    dropOverlay.classList.add('active');
+  });
+
+  document.addEventListener('dragleave', function(e) {
+    dragCounter--;
+    if (dragCounter <= 0) {
+      dragCounter = 0;
+      dropOverlay.classList.remove('active');
+    }
+  });
+
+  document.addEventListener('dragover', function(e) {
+    e.preventDefault();
+  });
+
+  document.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dragCounter = 0;
+    dropOverlay.classList.remove('active');
+
+    var files = Array.from(e.dataTransfer.files).filter(function(f) {
+      return f.name.endsWith('.cheat');
+    });
+
+    if (files.length === 0) {
+      toast('Please drop a .cheat file');
+      return;
+    }
+
+    var imported = 0;
+    var failed   = 0;
+
+    files.forEach(function(file) {
+      var formData = new FormData();
+      formData.append('file', file);
+      fetch('/api/import_cheat', { method: 'POST', body: formData })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.ok) {
+          imported++;
+          if (imported + failed === files.length) {
+            toast('Imported ' + imported + ' cheat' + (imported > 1 ? 's' : ''));
+            loadCheats();
+          }
+        } else if (data.duplicate) {
+          toast(data.error || 'Already in library');
+          failed++;
+        } else {
+          failed++;
+          toast('Import failed: ' + (data.error || 'unknown error'));
+        }
+      })
+      .catch(function() {
+        failed++;
+        toast('Import failed');
+      });
+    });
+  });
+})();
+
 // ── COMPARE ───────────────────────────────────────────────────
 function addToCompare(id) {
   fetch('/api/compare/add', {
@@ -1113,11 +1361,9 @@ function deleteCheat(id, desc) {
 }
 
 function confirmDialogAction() {
-  var idToDelete = pendingDeleteId;
-  var action = state.dialogAction;
   closeDialog();
-  if (action === 'delete' && idToDelete) {
-    fetch('/api/cheats/' + idToDelete, { method: 'DELETE' })
+  if (state.dialogAction === 'delete' && pendingDeleteId) {
+    fetch('/api/cheats/' + pendingDeleteId, { method: 'DELETE' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.ok) {
