@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OlyProbe — Compare Cheats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1a18;
+    --ink-2: #4a4a44;
+    --ink-3: #8a8a80;
+    --paper: #f7f6f0;
+    --paper-2: #eeede5;
+    --paper-3: #e4e3d8;
+    --accent: #2d5a3d;
+    --accent-light: #e8f0ea;
+    --accent-mid: #4a8c62;
+    --rule: #d0cfc4;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --mono: 'Courier New', monospace;
+    --diff-missing: #f5e8e8;
+    --diff-missing-text: #7a2a2a;
+    --diff-differs: #fdf3d8;
+    --diff-differs-text: #6b4c00;
+  }
+
+  html { font-size: 16px; }
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--paper);
+    border-bottom: 1px solid var(--rule);
+    padding: 0 32px;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 24px;
+  }
+
+  .header-brand {
+    display: flex; align-items: baseline; gap: 8px; flex-shrink: 0;
+  }
+  .header-brand-name {
+    font-family: var(--serif); font-size: 20px;
+    color: var(--ink); letter-spacing: -0.02em;
+  }
+  .header-brand-tag {
+    font-size: 10px; color: var(--ink-3);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    border: 1px solid var(--rule); border-radius: 3px;
+    padding: 1px 6px;
+  }
+
+  .header-actions {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    padding: 7px 14px; border: none; border-radius: 4px;
+    font-family: var(--sans); font-size: 12px; font-weight: 500;
+    letter-spacing: 0.03em; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s; white-space: nowrap;
+  }
+  .btn-primary:hover { background: #234830; }
+
+  .btn-secondary {
+    background: var(--paper-2); color: var(--ink-2);
+    padding: 7px 14px; border: 1px solid var(--rule); border-radius: 4px;
+    font-family: var(--sans); font-size: 12px; font-weight: 400;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s; white-space: nowrap;
+  }
+  .btn-secondary:hover { background: var(--paper-3); }
+
+  /* ── MAIN ── */
+  .app-main {
+    flex: 1;
+    padding: 32px 32px 64px;
+    overflow-x: auto;
+  }
+
+  .page-header {
+    display: flex; justify-content: space-between;
+    align-items: flex-end; margin-bottom: 28px;
+    padding-bottom: 20px; border-bottom: 1px solid var(--rule);
+    gap: 24px;
+  }
+
+  .view-headline {
+    font-family: var(--serif); font-size: 32px;
+    letter-spacing: -0.02em; color: var(--ink);
+  }
+  .view-subhead {
+    font-size: 13px; color: var(--ink-3);
+    margin-top: 4px; font-weight: 300;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center; padding: 80px 32px;
+    border: 1px dashed var(--rule); border-radius: 8px;
+    margin-top: 8px;
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 16px; opacity: 0.3; }
+  .empty-title {
+    font-family: var(--serif); font-size: 22px;
+    color: var(--ink); margin-bottom: 8px;
+  }
+  .empty-body {
+    font-size: 14px; color: var(--ink-3); line-height: 1.7;
+    max-width: 400px; margin: 0 auto; font-weight: 300;
+  }
+
+  /* ── COMPARISON TABLE ── */
+  .compare-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+  }
+
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 500px;
+  }
+
+  /* Column header row */
+  .compare-table thead tr {
+    background: var(--paper-2);
+    border-bottom: 2px solid var(--rule);
+  }
+
+  .col-prop-header {
+    padding: 12px 16px;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--ink-3);
+    text-align: left;
+    border-right: 1px solid var(--rule);
+    white-space: nowrap;
+    min-width: 180px;
+    position: sticky; left: 0;
+    background: var(--paper-2);
+    z-index: 2;
+  }
+
+  .col-cheat-header {
+    padding: 12px 16px;
+    text-align: left;
+    border-right: 1px solid var(--rule);
+    min-width: 160px;
+    vertical-align: top;
+  }
+  .col-cheat-header:last-child { border-right: none; }
+
+  .cheat-col-category {
+    font-size: 9px; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent-mid);
+    margin-bottom: 3px;
+  }
+  .cheat-col-name {
+    font-size: 13px; font-weight: 500; color: var(--ink);
+    margin-bottom: 4px; line-height: 1.3;
+  }
+  .cheat-col-meta {
+    font-size: 10px; color: var(--ink-3);
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .cheat-col-remove {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--paper-3); color: var(--ink-3);
+    border: 1px solid var(--rule); cursor: pointer;
+    font-size: 10px; line-height: 1;
+    transition: background 0.15s, color 0.15s;
+    float: right; margin-top: 2px;
+  }
+  .cheat-col-remove:hover {
+    background: #f5e8e8; color: #7a2a2a; border-color: #c87070;
+  }
+
+  /* Body rows */
+  .compare-table tbody tr {
+    border-bottom: 1px solid var(--rule);
+  }
+  .compare-table tbody tr:last-child { border-bottom: none; }
+  .compare-table tbody tr:hover { background: rgba(45,90,61,0.02); }
+
+  .cell-prop {
+    padding: 9px 16px;
+    border-right: 1px solid var(--rule);
+    position: sticky; left: 0;
+    background: var(--paper);
+    z-index: 1;
+  }
+  .compare-table tbody tr:hover .cell-prop {
+    background: #f4f3ec;
+  }
+  .cell-prop-name {
+    font-size: 12px; font-weight: 500; color: var(--ink);
+  }
+  .cell-prop-api {
+    font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+    margin-top: 1px;
+  }
+
+  .cell-value {
+    padding: 9px 16px;
+    border-right: 1px solid var(--rule);
+    vertical-align: middle;
+  }
+  .cell-value:last-child { border-right: none; }
+
+  .value-text {
+    font-size: 12px; color: var(--ink);
+    font-family: var(--mono);
+  }
+  .value-missing {
+    font-size: 11px; color: var(--ink-3);
+    font-style: italic;
+  }
+
+  /* Difference highlighting */
+  .cell-value.diff-missing {
+    background: var(--diff-missing);
+  }
+  .cell-value.diff-missing .value-text {
+    color: var(--diff-missing-text);
+  }
+  .cell-value.diff-differs {
+    background: var(--diff-differs);
+  }
+  .cell-value.diff-differs .value-text {
+    color: var(--diff-differs-text);
+  }
+
+  /* Legend */
+  .legend {
+    display: flex; gap: 16px; align-items: center;
+    margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--ink-3);
+  }
+  .legend-swatch {
+    width: 12px; height: 12px; border-radius: 2px;
+    border: 1px solid var(--rule);
+  }
+
+  /* Copy link toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink); color: var(--paper);
+    padding: 10px 20px; border-radius: 6px;
+    font-size: 13px; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s; z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* Diff summary bar */
+  .diff-summary {
+    display: flex; gap: 16px; align-items: center;
+    padding: 10px 16px; border-radius: 6px;
+    background: var(--paper-2); border: 1px solid var(--rule);
+    margin-bottom: 16px; font-size: 12px; color: var(--ink-2);
+    flex-wrap: wrap;
+  }
+  .diff-summary strong { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-brand">
+    <span class="header-brand-name">OlyProbe</span>
+    <span class="header-brand-tag">Compare</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn-secondary" onclick="copyLink()">&#128279; Copy link</button>
+    <button class="btn-secondary" onclick="clearAll()">Clear all</button>
+    <button class="btn-primary" onclick="window.open('http://localhost:5000','_blank')">&#8592; Library</button>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="page-header">
+    <div>
+      <h1 class="view-headline">Cheat Comparison</h1>
+      <p class="view-subhead" id="subhead">Add Cheats from the library to compare their settings side by side.</p>
+    </div>
+  </div>
+
+  <div id="empty-state" class="empty-state">
+    <div class="empty-icon">&#9776;</div>
+    <p class="empty-title">No Cheats added yet</p>
+    <p class="empty-body">Go to the OlyProbe library, click <strong>Add to comparison</strong> on any Cheat card, then return here to see it in the table. You can add up to six Cheats at once.</p>
+  </div>
+
+  <div id="comparison-content" style="display:none">
+    <div class="diff-summary" id="diff-summary"></div>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:var(--diff-differs)"></div>
+        Value differs across Cheats
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:var(--diff-missing)"></div>
+        Property not present in this Cheat
+      </div>
+    </div>
+    <div class="compare-table-wrap">
+      <table class="compare-table" id="compare-table">
+        <thead id="table-head"></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var state = {
+  cheats: []   // array of { id, meta, controls }
+};
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  // Check for ids in URL params (snapshot/share mode)
+  var params = new URLSearchParams(window.location.search);
+  var ids    = params.get('ids');
+  if (ids) {
+    var idList = ids.split(',').filter(Boolean);
+    loadCheatsById(idList);
+  } else {
+    // Poll server for current comparison session
+    pollComparison();
+  }
+});
+
+// Poll every 2 seconds for updates from the main UI
+function pollComparison() {
+  fetchComparison();
+  setInterval(fetchComparison, 2000);
+}
+
+function fetchComparison() {
+  fetch('/api/compare')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.cheats && JSON.stringify(data.cheats.map(function(c){return c.id;}))
+        !== JSON.stringify(state.cheats.map(function(c){return c.id;}))) {
+      state.cheats = data.cheats;
+      render();
+    }
+  })
+  .catch(function() {});
+}
+
+function loadCheatsById(ids) {
+  var promises = ids.map(function(id) {
+    return fetch('/api/cheats/' + id)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.ok) return { id: id, meta: data.meta, controls: data.controls };
+        return null;
+      })
+      .catch(function() { return null; });
+  });
+  Promise.all(promises).then(function(results) {
+    state.cheats = results.filter(Boolean);
+    render();
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+  var cheats = state.cheats;
+
+  if (cheats.length === 0) {
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('comparison-content').style.display = 'none';
+    document.getElementById('subhead').textContent =
+      'Add Cheats from the library to compare their settings side by side.';
+    return;
+  }
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('comparison-content').style.display = 'block';
+  document.getElementById('subhead').textContent =
+    'Comparing ' + cheats.length + ' Cheat' + (cheats.length > 1 ? 's' : '') + '.';
+
+  // Build unified property list across all cheats
+  var propMap = {};  // name -> label
+  cheats.forEach(function(cheat) {
+    (cheat.controls || []).forEach(function(ctrl) {
+      if (!propMap[ctrl.name]) propMap[ctrl.name] = ctrl.label || ctrl.name;
+    });
+  });
+  var propNames = Object.keys(propMap);
+
+  // Build lookup: cheatId -> { propName -> value }
+  var valueMaps = {};
+  cheats.forEach(function(cheat) {
+    valueMaps[cheat.id] = {};
+    (cheat.controls || []).forEach(function(ctrl) {
+      valueMaps[cheat.id][ctrl.name] = ctrl.current_value;
+    });
+  });
+
+  // Count differences
+  var diffCount    = 0;
+  var missingCount = 0;
+  propNames.forEach(function(name) {
+    var vals = cheats.map(function(c) {
+      return valueMaps[c.id][name];
+    });
+    var defined = vals.filter(function(v) { return v !== undefined; });
+    var missing = vals.filter(function(v) { return v === undefined; });
+    if (missing.length > 0) missingCount++;
+    var unique = defined.filter(function(v, i, a) { return a.indexOf(v) === i; });
+    if (unique.length > 1) diffCount++;
+  });
+
+  // Diff summary
+  document.getElementById('diff-summary').innerHTML =
+    '<strong>' + propNames.length + '</strong> properties · ' +
+    '<strong>' + cheats.length + '</strong> Cheats · ' +
+    (diffCount > 0
+      ? '<strong style="color:var(--diff-differs-text)">' + diffCount + ' differ</strong> · '
+      : '<strong style="color:var(--accent)">all values match</strong> · ') +
+    (missingCount > 0
+      ? '<strong style="color:var(--diff-missing-text)">' + missingCount + ' properties missing in some Cheats</strong>'
+      : 'all properties present in all Cheats');
+
+  // Build thead
+  var thead = document.getElementById('table-head');
+  var headRow = '<tr><th class="col-prop-header">Property</th>';
+  cheats.forEach(function(cheat) {
+    headRow +=
+      '<th class="col-cheat-header">' +
+        '<button class="cheat-col-remove" onclick="removeCheat(\'' + esc(cheat.id) + '\')" title="Remove">×</button>' +
+        '<div class="cheat-col-category">' + esc(cheat.meta.category || '') + '</div>' +
+        '<div class="cheat-col-name">' + esc(cheat.meta.description || cheat.id) + '</div>' +
+        '<div class="cheat-col-meta">' +
+          '<span>' + esc(cheat.meta.camera_model || '') + '</span>' +
+          '<span>' + esc((cheat.meta.captured_at || '').slice(0,10)) + '</span>' +
+        '</div>' +
+      '</th>';
+  });
+  headRow += '</tr>';
+  thead.innerHTML = headRow;
+
+  // Build tbody
+  var tbody = document.getElementById('table-body');
+  var rows  = '';
+  propNames.forEach(function(name) {
+    var vals = cheats.map(function(c) {
+      return valueMaps[c.id][name];
+    });
+    var defined = vals.filter(function(v) { return v !== undefined && v !== null; });
+    var unique  = defined.filter(function(v, i, a) { return a.indexOf(v) === i; });
+    var hasMissing = vals.some(function(v) { return v === undefined || v === null; });
+    var hasDiff    = unique.length > 1;
+
+    rows += '<tr><td class="cell-prop">' +
+      '<div class="cell-prop-name">' + esc(propMap[name]) + '</div>' +
+      '<div class="cell-prop-api">' + esc(name) + '</div>' +
+      '</td>';
+
+    cheats.forEach(function(cheat) {
+      var val     = valueMaps[cheat.id][name];
+      var missing = val === undefined || val === null;
+      var differs = !missing && hasDiff;
+      var cls     = missing ? 'diff-missing' : (differs ? 'diff-differs' : '');
+      rows += '<td class="cell-value ' + cls + '">' +
+        (missing
+          ? '<span class="value-missing">—</span>'
+          : '<span class="value-text">' + esc(String(val)) + '</span>') +
+        '</td>';
+    });
+
+    rows += '</tr>';
+  });
+  tbody.innerHTML = rows;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+function removeCheat(id) {
+  fetch('/api/compare/remove', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cheat_id: id })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      state.cheats = state.cheats.filter(function(c) { return c.id !== id; });
+      render();
+    }
+  })
+  .catch(function() {});
+}
+
+function clearAll() {
+  fetch('/api/compare/clear', { method: 'POST' })
+  .then(function() {
+    state.cheats = [];
+    render();
+  })
+  .catch(function() {});
+}
+
+function copyLink() {
+  var ids = state.cheats.map(function(c) { return c.id; }).join(',');
+  var url = window.location.origin + '/compare?ids=' + ids;
+  navigator.clipboard.writeText(url)
+  .then(function() { toast('Link copied to clipboard'); })
+  .catch(function() {
+    // Fallback
+    var inp = document.createElement('input');
+    inp.value = url;
+    document.body.appendChild(inp);
+    inp.select();
+    document.execCommand('copy');
+    document.body.removeChild(inp);
+    toast('Link copied to clipboard');
+  });
+}
+
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 3000);
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+</script>
+</body>
+</html>
