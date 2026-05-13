@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About — OlyProbe by Computography Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1a18;
+    --ink-2: #4a4a44;
+    --ink-3: #8a8a80;
+    --paper: #f7f6f0;
+    --paper-2: #eeede5;
+    --paper-3: #e4e3d8;
+    --accent: #2d5a3d;
+    --accent-light: #e8f0ea;
+    --accent-mid: #4a8c62;
+    --rule: #d0cfc4;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--paper); color: var(--ink); line-height: 1.6; }
+
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--paper); border-bottom: 1px solid var(--rule);
+    padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px;
+  }
+  .nav-brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; color: inherit; }
+  .nav-brand-name { font-family: var(--serif); font-size: 22px; letter-spacing: -0.02em; }
+  .nav-brand-by { font-size: 11px; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .nav-links { display: flex; gap: 28px; list-style: none; }
+  .nav-links a { font-size: 13px; color: var(--ink-2); text-decoration: none; letter-spacing: 0.02em; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-links a.active { color: var(--accent); font-weight: 500; }
+
+  /* PAGE HEADER */
+  .page-header {
+    padding: 72px 40px 56px;
+    max-width: 760px; margin: 0 auto;
+    border-bottom: 1px solid var(--rule);
+  }
+  .page-eyebrow { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; margin-bottom: 14px; }
+  .page-headline { font-family: var(--serif); font-size: 52px; letter-spacing: -0.03em; line-height: 1.05; color: var(--ink); margin-bottom: 20px; }
+  .page-mission { font-size: 17px; color: var(--ink-2); line-height: 1.75; font-weight: 300; max-width: 580px; }
+  .page-mission strong { color: var(--ink); font-weight: 500; }
+
+  /* CONTENT */
+  .content { max-width: 760px; margin: 0 auto; padding: 0 40px; }
+
+  /* PROSE SECTION */
+  .prose-section { padding: 56px 0; border-bottom: 1px solid var(--rule); }
+  .prose-section:last-of-type { border-bottom: none; }
+
+  .section-eyebrow { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; margin-bottom: 14px; }
+
+  .section-headline { font-family: var(--serif); font-size: 32px; letter-spacing: -0.02em; line-height: 1.15; color: var(--ink); margin-bottom: 20px; }
+
+  .prose p {
+    font-size: 15px; color: var(--ink-2); line-height: 1.8;
+    font-weight: 300; margin-bottom: 16px;
+  }
+  .prose p:last-child { margin-bottom: 0; }
+  .prose strong { color: var(--ink); font-weight: 500; }
+  .prose a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-mid); text-underline-offset: 2px; }
+
+  /* PULLQUOTE */
+  .pullquote {
+    border-left: 3px solid var(--accent-mid);
+    padding: 4px 0 4px 24px;
+    margin: 28px 0;
+  }
+  .pullquote p {
+    font-family: var(--serif); font-size: 20px; line-height: 1.5;
+    color: var(--ink); font-weight: 400; margin: 0;
+  }
+
+  /* DEFINITION CARDS */
+  .definition-cards { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
+  .definition-card {
+    background: var(--paper-2); border-radius: 8px; padding: 24px 28px;
+    border-left: 3px solid var(--accent-mid);
+  }
+  .definition-term {
+    font-family: var(--serif); font-size: 22px; letter-spacing: -0.01em;
+    color: var(--ink); margin-bottom: 8px;
+  }
+  .definition-body { font-size: 14px; color: var(--ink-2); line-height: 1.75; font-weight: 300; }
+
+  /* ROADMAP */
+  .roadmap { display: flex; flex-direction: column; gap: 0; margin-top: 24px; }
+  .roadmap-item {
+    display: flex; gap: 20px; align-items: flex-start;
+    padding: 20px 0; border-bottom: 1px solid var(--rule);
+  }
+  .roadmap-item:last-child { border-bottom: none; }
+  .roadmap-marker {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 500; margin-top: 2px;
+  }
+  .roadmap-marker.done { background: var(--accent); color: #fff; }
+  .roadmap-marker.active { background: var(--accent-light); color: var(--accent); border: 1.5px solid var(--accent-mid); }
+  .roadmap-marker.next { background: var(--paper-2); color: var(--ink-3); border: 1px solid var(--rule); }
+  .roadmap-content {}
+  .roadmap-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+  .roadmap-body { font-size: 13px; color: var(--ink-2); line-height: 1.65; font-weight: 300; }
+  .roadmap-tag {
+    display: inline-block; font-size: 10px; padding: 2px 8px;
+    border-radius: 10px; margin-bottom: 6px; font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .tag-live { background: var(--accent-light); color: var(--accent); }
+  .tag-building { background: #faeeda; color: #854f0b; }
+  .tag-planned { background: var(--paper-2); color: var(--ink-3); }
+
+  /* CONTRIBUTE */
+  .contribute-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+  .contribute-card {
+    border: 1px solid var(--rule); border-radius: 8px; padding: 20px 22px;
+  }
+  .contribute-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
+  .contribute-body { font-size: 13px; color: var(--ink-2); line-height: 1.7; font-weight: 300; margin-bottom: 12px; }
+  .contribute-link {
+    font-size: 12px; color: var(--accent); text-decoration: none;
+    border-bottom: 1px solid var(--accent-mid); padding-bottom: 1px;
+    transition: opacity 0.2s;
+  }
+  .contribute-link:hover { opacity: 0.75; }
+
+  /* CONTACT FORM */
+  .contact-section {
+    background: var(--accent-light); border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule); padding: 56px 40px;
+  }
+  .contact-inner { max-width: 760px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
+  .contact-info {}
+  .contact-headline { font-family: var(--serif); font-size: 32px; letter-spacing: -0.02em; line-height: 1.15; color: var(--ink); margin-bottom: 14px; }
+  .contact-body { font-size: 14px; color: var(--ink-2); line-height: 1.8; font-weight: 300; margin-bottom: 14px; }
+  .contact-uses { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .contact-use { font-size: 13px; color: var(--ink-2); font-weight: 300; padding-left: 14px; position: relative; line-height: 1.6; }
+  .contact-use::before { content: '·'; position: absolute; left: 0; color: var(--accent-mid); font-size: 16px; line-height: 1.3; }
+  .contact-form {}
+  .field { margin-bottom: 14px; }
+  .field-label { font-size: 11px; font-weight: 500; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 5px; }
+  .field-label .opt { font-size: 10px; color: var(--ink-3); text-transform: none; font-weight: 300; margin-left: 4px; letter-spacing: 0; }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%; background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 10px 14px; font-family: var(--sans);
+    font-size: 13px; color: var(--ink); outline: none;
+    transition: border-color 0.2s; -webkit-appearance: none;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus { border-color: var(--accent-mid); }
+  .field input::placeholder,
+  .field textarea::placeholder { color: var(--ink-3); }
+  .field textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-note { font-size: 11px; color: var(--ink-3); line-height: 1.6; margin-bottom: 16px; }
+  .btn-submit {
+    background: var(--accent); color: #fff;
+    padding: 12px 24px; border: none; border-radius: 4px;
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.04em; cursor: pointer;
+    transition: background 0.2s; display: inline-block;
+  }
+  .btn-submit:hover { background: #234830; }
+  .form-success {
+    display: none; background: var(--accent-light);
+    border: 1px solid var(--accent-mid); border-radius: 6px;
+    padding: 14px 18px; font-size: 13px; color: var(--accent);
+    margin-top: 12px; line-height: 1.6;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 32px 40px; border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer-brand { font-family: var(--serif); font-size: 16px; color: var(--ink-2); }
+  .footer-copy { font-size: 12px; color: var(--ink-3); }
+  .footer-links { display: flex; gap: 20px; list-style: none; }
+  .footer-links a { font-size: 12px; color: var(--ink-3); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--accent); }
+
+  /* HONEYPOT */
+  .hp-field { display: none !important; }
+
+  @media (max-width: 700px) {
+    nav { padding: 0 20px; }
+    .nav-links { gap: 16px; }
+    .page-header, .content, footer { padding-left: 20px; padding-right: 20px; }
+    .page-headline { font-size: 36px; }
+    .contact-section { padding: 40px 20px; }
+    .contact-inner { grid-template-columns: 1fr; gap: 32px; }
+    .contribute-grid { grid-template-columns: 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+    .section-headline { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <span class="nav-brand-name">OlyProbe</span>
+    <span class="nav-brand-by">by Computography Lab</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="download.html">Download</a></li>
+    <li><a href="cheats.html">Cheats</a></li>
+    <li><a href="community.html">Community</a></li>
+    <li><a href="about.html" class="active">About</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <p class="page-eyebrow">Computography Lab</p>
+  <h1 class="page-headline">About us</h1>
+  <p class="page-mission">Computography Lab exists to <strong>bring transparency and creativity to the control and operation of today's cameras.</strong></p>
+</div>
+
+<div class="content">
+
+  <!-- FOUNDING STORY -->
+  <section class="prose-section">
+    <p class="section-eyebrow">The founding story</p>
+    <h2 class="section-headline">A photographer's problem, a technologist's solution</h2>
+    <div class="prose">
+      <p>Computography Lab was founded by a lifelong photographer and career-long technology leader whose personal creative journey led directly to this project — and whose frustrations are almost certainly familiar to serious Olympus and OM SYSTEM shooters everywhere.</p>
+
+      <div class="pullquote">
+        <p>The cameras have evolved from being devices to being systems — but the tools for configuring and controlling them haven't kept pace.</p>
+      </div>
+
+      <p>For decades, the most technically ambitious photography has involved careful manipulation of exposure control, lighting, superimposition, white balance, sequential shots, and video to produce compositions that play with the viewer's perception of light, time, space, and motion. As cameras have become more powerful, more of this work can happen in-camera rather than in post — which is exciting. But the growth of features has come at a cost.</p>
+
+      <p>The manual for one recent Lumix body runs to more than 900 pages. The manual for the OM-1 Mark II tops 600. Finding, understanding, and correctly setting the right controls for a specific creative intent has become genuinely difficult. The on-camera custom settings functionality — C1, C2, C3 — was designed for a simpler era and hasn't scaled with the complexity of what these cameras can now do.</p>
+
+      <p><strong>OlyProbe is the first step toward solving this.</strong> It reads every control available on a connected camera, captures its current state, and makes that configuration portable, shareable, and reusable. Think of it as C1 through C-infinity — an unlimited digital configuration memory for your camera that lives outside the camera.</p>
+
+      <p><strong>OlyComp</strong> builds on this foundation, separating the camera from its controls entirely and enabling real-time remote configuration, live preview, and scripted computational shooting sequences that the camera's own firmware cannot execute.</p>
+    </div>
+  </section>
+
+  <!-- DEFINITIONS -->
+  <section class="prose-section">
+    <p class="section-eyebrow">Our language</p>
+    <h2 class="section-headline">What we mean by Computography</h2>
+    <div class="prose">
+      <p>We use a few terms that are specific to the Computography Lab community. Here is what they mean.</p>
+    </div>
+    <div class="definition-cards">
+      <div class="definition-card">
+        <p class="definition-term">Computography™</p>
+        <p class="definition-body">A portmanteau of Computational Photography. Analog computational photography techniques have been used for decades, but today's highly intelligent cameras — particularly those from OM SYSTEM — are enabling in-camera digital controls and computational features that go far beyond what was previously possible. These cameras can also be configured and controlled remotely from intelligent devices for both standard and computational functions, enabling real-time preview of configuration changes and scripted sequential shooting for sophisticated time-lapse, bracketing, in-camera compositing, and more. Computography marries the powerful capabilities of advanced cameras with the flexibility and creativity of remote configuration and control.</p>
+      </div>
+      <div class="definition-card">
+        <p class="definition-term">High-intent photography</p>
+        <p class="definition-body">Photography that uses calculation, planning, and orchestrated execution to achieve a specific image goal. It includes fashion, studio, architecture, nature, fine art, and other disciplines where the final image is the result of deliberate technical and creative decisions made before, during, and after the shutter fires. High-intent photographers are the primary audience for Computography Lab's tools.</p>
+      </div>
+      <div class="definition-card">
+        <p class="definition-term">Setting Cheats</p>
+        <p class="definition-body">A complete snapshot of a camera's configuration at a specific moment — every control, every value — captured by OlyProbe and saved for reuse. A Setting Cheat can be applied to the same camera later to instantly restore a known-good configuration, or shared with the community for others to use as a starting point for their own work. The name is deliberate: these are shortcuts that let you skip the 600-page manual.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section class="prose-section">
+    <p class="section-eyebrow">What we are building</p>
+    <h2 class="section-headline">The Computography Lab roadmap</h2>
+    <div class="prose">
+      <p>We are building a suite of tools for the OM SYSTEM and Olympus community. Here is where things stand.</p>
+    </div>
+    <div class="roadmap">
+      <div class="roadmap-item">
+        <div class="roadmap-marker done">✓</div>
+        <div class="roadmap-content">
+          <span class="roadmap-tag tag-live">Live now</span>
+          <p class="roadmap-title">OlyProbe — camera capability interrogation</p>
+          <p class="roadmap-body">A free tool that connects to any compatible Olympus or OM SYSTEM camera via USB, reads every available control and its permitted values, and produces a complete capability map. The foundation for everything that follows.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-marker done">✓</div>
+        <div class="roadmap-content">
+          <span class="roadmap-tag tag-live">Live now</span>
+          <p class="roadmap-title">Setting Cheats community library</p>
+          <p class="roadmap-body">A subscriber community where photographers share complete camera configurations — including example images and EXIF metadata — for specific shooting scenarios. Browse, download as PDF, or apply directly to a connected camera.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-marker active">→</div>
+        <div class="roadmap-content">
+          <span class="roadmap-tag tag-building">In development</span>
+          <p class="roadmap-title">OlyComp — creative remote control</p>
+          <p class="roadmap-body">A remote control application for OM SYSTEM cameras that handles standard controls and enables computational shooting sequences not available in-camera. Live preview with real-time configuration adjustment is a core goal.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-marker next">○</div>
+        <div class="roadmap-content">
+          <span class="roadmap-tag tag-planned">Planned</span>
+          <p class="roadmap-title">Cross-camera capability analysis</p>
+          <p class="roadmap-body">A tool for comparing the full capability sets of different camera models side by side — useful for camera shoppers, multi-camera shooters, and anyone trying to understand what a firmware update has changed.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-marker next">○</div>
+        <div class="roadmap-content">
+          <span class="roadmap-tag tag-planned">Planned</span>
+          <p class="roadmap-title">Broader camera coverage</p>
+          <p class="roadmap-body">OlyProbe currently focuses on Olympus and OM SYSTEM bodies. Expanding coverage to additional camera models and manufacturers is on the horizon as the community and capability library grow.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTRIBUTE -->
+  <section class="prose-section">
+    <p class="section-eyebrow">Get involved</p>
+    <h2 class="section-headline">How to contribute</h2>
+    <div class="prose">
+      <p>Computography Lab is a small operation with large ambitions. There are two ways to contribute — with data and with code — and both matter equally.</p>
+    </div>
+    <div class="contribute-grid">
+      <div class="contribute-card">
+        <p class="contribute-title">Contribute camera data</p>
+        <p class="contribute-body">Download OlyProbe, connect your Olympus or OM SYSTEM camera, and submit your camera's capability data. Every submission expands the community library and improves cross-camera analysis for everyone. No technical knowledge required.</p>
+        <a href="download.html" class="contribute-link">Download OlyProbe →</a>
+      </div>
+      <div class="contribute-card">
+        <p class="contribute-title">Contribute Setting Cheats</p>
+        <p class="contribute-body">Subscribe and share your camera configurations with the community. A great Setting Cheat — with a compelling example image — helps other photographers discover what their cameras can do and inspires new creative approaches.</p>
+        <a href="community.html" class="contribute-link">Browse and submit Cheats →</a>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- CONTACT FORM -->
+<section class="contact-section" id="contact">
+  <div class="contact-inner">
+    <div class="contact-info">
+      <p class="section-eyebrow">Get in touch</p>
+      <h2 class="contact-headline">Contact us</h2>
+      <p class="contact-body">We welcome messages from all kinds of visitors. Whether you have a question, found a bug, or are interested in working with us, we would love to hear from you.</p>
+      <ul class="contact-uses">
+        <li class="contact-use">General questions about OlyProbe or OlyComp</li>
+        <li class="contact-use">Bug reports or site feedback</li>
+        <li class="contact-use">Industry and partnership enquiries</li>
+        <li class="contact-use">Collaboration and contributor interest</li>
+        <li class="contact-use">Press and media</li>
+      </ul>
+    </div>
+    <div class="contact-form">
+      <form name="contact" netlify netlify-honeypot="hp-field" action="/about.html" method="POST" onsubmit="handleContact(event)">
+        <input type="hidden" name="form-name" value="contact">
+        <div class="field hp-field">
+          <label>Do not fill this in <input name="hp-field"></label>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label" for="c-fname">First name</label>
+            <input type="text" id="c-fname" name="first_name" placeholder="First name">
+          </div>
+          <div class="field">
+            <label class="field-label" for="c-lname">Last name</label>
+            <input type="text" id="c-lname" name="last_name" placeholder="Last name">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="c-email">Email address</label>
+          <input type="email" id="c-email" name="email" placeholder="your@email.com">
+        </div>
+        <div class="field">
+          <label class="field-label" for="c-org">Organisation <span class="opt">(optional)</span></label>
+          <input type="text" id="c-org" name="organisation" placeholder="Company, institution, or publication">
+        </div>
+        <div class="field">
+          <label class="field-label" for="c-type">Type of enquiry <span class="opt">(optional)</span></label>
+          <select id="c-type" name="enquiry_type">
+            <option value="">Select...</option>
+            <option>General question</option>
+            <option>Bug report</option>
+            <option>Site feedback</option>
+            <option>Industry / partnership</option>
+            <option>Collaboration / contributor</option>
+            <option>Press / media</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="c-message">Message</label>
+          <textarea id="c-message" name="message" placeholder="Your message..." rows="5"></textarea>
+        </div>
+        <p class="form-note">We read every message and aim to respond within a few business days. You can also reach us directly at <a href="mailto:olyprobe@outlook.com" style="color:var(--accent);">olyprobe@outlook.com</a>.</p>
+        <button type="submit" class="btn-submit">Send message</button>
+        <div class="form-success" id="form-success">
+          ✓ Thank you — your message has been sent. We will be in touch soon.
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="footer-brand">OlyProbe</span>
+  <ul class="footer-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="download.html">Download</a></li>
+    <li><a href="cheats.html">Cheats</a></li>
+    <li><a href="community.html">Community</a></li>
+    <li><a href="about.html">About</a></li>
+  </ul>
+  <span class="footer-copy">© 2025 Computography Lab</span>
+</footer>
+
+<script>
+function handleContact(e) {
+  e.preventDefault();
+  var form = e.target;
+  var email = form.querySelector('[name=email]').value.trim();
+  var message = form.querySelector('[name=message]').value.trim();
+  if (!email || !message) {
+    alert('Please provide your email address and a message.');
+    return;
+  }
+  var emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRe.test(email)) {
+    alert('Please enter a valid email address.');
+    return;
+  }
+  fetch('/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(new FormData(form)).toString()
+  })
+  .then(function() {
+    document.getElementById('form-success').style.display = 'block';
+    form.reset();
+  })
+  .catch(function() {
+    alert('Something went wrong. Please email us directly at olyprobe@outlook.com');
+  });
+}
+</script>
+
+</body>
+</html>
