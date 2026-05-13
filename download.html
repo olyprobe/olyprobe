@@ -60,6 +60,69 @@
     font-size: 15px; color: var(--ink-2); line-height: 1.7;
     font-weight: 300; max-width: 560px;
   }
+  .page-sub + .page-sub { margin-top: 12px; }
+
+  /* Supported cameras popup */
+  .cameras-link {
+    color: var(--accent); text-decoration: underline;
+    text-decoration-color: var(--accent-mid);
+    text-underline-offset: 2px; cursor: pointer;
+    background: none; border: none; font: inherit;
+    padding: 0;
+  }
+  .cameras-link:hover { opacity: 0.75; }
+
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,26,24,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--paper); border-radius: 8px;
+    border: 1px solid var(--rule);
+    padding: 32px; max-width: 560px; width: 90%;
+    max-height: 80vh; overflow-y: auto;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+  }
+  .modal-title {
+    font-family: var(--serif); font-size: 24px;
+    color: var(--ink); margin-bottom: 6px; letter-spacing: -0.01em;
+  }
+  .modal-intro {
+    font-size: 13px; color: var(--ink-3); margin-bottom: 24px;
+    line-height: 1.6; font-weight: 300;
+  }
+  .modal-tier-label {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent-mid);
+    margin-bottom: 10px; margin-top: 20px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--rule);
+  }
+  .modal-tier-label:first-of-type { margin-top: 0; }
+  .modal-tier-desc {
+    font-size: 12px; color: var(--ink-3); margin-bottom: 10px;
+    font-weight: 300; line-height: 1.5;
+  }
+  .camera-list {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px;
+  }
+  .camera-chip {
+    font-size: 11px; padding: 3px 9px; border-radius: 10px;
+    background: var(--paper-2); color: var(--ink-2);
+    border: 1px solid var(--rule);
+  }
+  .modal-close {
+    display: block; margin: 24px auto 0;
+    padding: 8px 24px;
+    background: var(--paper-2); color: var(--ink-2);
+    border: 1px solid var(--rule); border-radius: 4px;
+    font-family: var(--sans); font-size: 13px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .modal-close:hover { background: var(--paper-3); }
 
   .content { max-width: 900px; margin: 0 auto; padding: 56px 40px; }
 
@@ -265,9 +328,46 @@
 </nav>
 
 <div class="page-header">
-  <p class="page-eyebrow">Get started</p>
+  <p class="page-eyebrow">Free download — beta</p>
   <h1 class="page-headline">Download OlyProbe</h1>
-  <p class="page-sub">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Connect your Olympus or OM SYSTEM camera via USB, run OlyProbe, and discover everything your camera is capable of.</p>
+  <p class="page-sub">OlyProbe is an app for Windows, Mac, and Linux systems that enables you to create an unlimited number of custom "Setting Cheats" for instant, exact camera setup when needed. It supports a wide range of Olympus/OM SYSTEM camera models. See <button class="cameras-link" onclick="openCamerasModal()">supported cameras and capability levels</button> for details.</p>
+  <p class="page-sub" style="margin-top:14px;">OlyProbe is a simple application for reading and writing configuration information with your camera and saving, using, and uploading the .cheat files you create. It consumes almost no system resources, doesn't require any drivers, and has little interaction with your operating system.</p>
+  <p class="page-sub" style="margin-top:14px; padding: 12px 16px; background: var(--paper-2); border-radius:4px; border-left: 3px solid var(--accent-mid); font-size:13px;">This is beta software and does not yet have the certificate needed to avoid security warnings during installation. You can power through those warnings and install it safely — see the security note below. The production version will not have this restriction.</p>
+</div>
+
+<!-- Supported cameras modal -->
+<div class="modal-overlay" id="cameras-modal" onclick="handleModalClick(event)">
+  <div class="modal">
+    <p class="modal-title">Supported Cameras</p>
+    <p class="modal-intro">OlyProbe supports all Olympus and OM SYSTEM cameras that expose the OPC WiFi API. USB tethering is supported on pro-tier bodies only, in line with OM SYSTEM's own tethering support policy.</p>
+
+    <p class="modal-tier-label">OM SYSTEM — current bodies</p>
+    <p class="modal-tier-desc">Full WiFi OPC API. USB tethering on OM-1 and OM-1 Mark II.</p>
+    <div class="camera-list">
+      <span class="camera-chip">OM-1 Mark II</span>
+      <span class="camera-chip">OM-1</span>
+      <span class="camera-chip">OM-5 Mark II</span>
+      <span class="camera-chip">OM-5</span>
+      <span class="camera-chip">OM-3</span>
+      <span class="camera-chip">OM-D E-M10 Mark IV</span>
+    </div>
+
+    <p class="modal-tier-label">Olympus — recent discontinued bodies</p>
+    <p class="modal-tier-desc">Full WiFi OPC API. USB tethering on E-M1X, E-M1 Mark II, and E-M1 Mark III.</p>
+    <div class="camera-list">
+      <span class="camera-chip">OM-D E-M1X</span>
+      <span class="camera-chip">OM-D E-M1 Mark III</span>
+      <span class="camera-chip">OM-D E-M1 Mark II</span>
+      <span class="camera-chip">OM-D E-M1</span>
+      <span class="camera-chip">OM-D E-M5 Mark III</span>
+      <span class="camera-chip">OM-D E-M5 Mark II</span>
+      <span class="camera-chip">OM-D E-M10 Mark III</span>
+      <span class="camera-chip">OM-D E-M10 Mark II</span>
+      <span class="camera-chip">OM-D E-M10</span>
+    </div>
+
+    <button class="modal-close" onclick="closeCamerasModal()">Close</button>
+  </div>
 </div>
 
 <div class="content">
@@ -278,22 +378,22 @@
       <div class="platform-icon">⊞</div>
       <p class="platform-name">Windows</p>
       <p class="platform-version">Windows 10 or later · 64-bit</p>
-      <p class="platform-warning">Windows may show a security warning. Click "More info" then "Run anyway" — see note below.</p>
-      <a href="#" class="btn-download">Download .exe</a>
+      <p class="platform-warning">Windows may show a security warning. Click "More info" then "Run anyway" — see the security note below.</p>
+      <a href="https://github.com/olyprobe/olyprobe/releases/download/v0.1-beta/olyprobe.exe" class="btn-download">Download .exe</a>
     </div>
-    <div class="platform-card">
+    <div class="platform-card" style="opacity:0.6;">
       <div class="platform-icon">⌘</div>
       <p class="platform-name">macOS</p>
       <p class="platform-version">macOS 12 or later · Apple Silicon &amp; Intel</p>
-      <p class="platform-warning">macOS may block the app on first launch. Go to System Settings → Privacy &amp; Security to allow it.</p>
-      <a href="#" class="btn-download">Download .dmg</a>
+      <p class="platform-warning">Coming soon.</p>
+      <span class="btn-download" style="background:var(--ink-3); cursor:not-allowed;">Coming soon</span>
     </div>
-    <div class="platform-card">
+    <div class="platform-card" style="opacity:0.6;">
       <div class="platform-icon">⬡</div>
       <p class="platform-name">Linux</p>
       <p class="platform-version">Ubuntu 20.04+ · Debian · Raspberry Pi OS</p>
-      <p class="platform-warning">Run <code>chmod +x olyprobe</code> in your terminal before launching.</p>
-      <a href="#" class="btn-download">Download binary</a>
+      <p class="platform-warning">Coming soon.</p>
+      <span class="btn-download" style="background:var(--ink-3); cursor:not-allowed;">Coming soon</span>
     </div>
   </div>
 
@@ -407,7 +507,7 @@
 
   <div class="security-note">
     <p class="security-note-title">About the security warning</p>
-    <p class="security-note-body">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. OlyProbe does not connect to the internet during the probe process — it communicates only with your locally connected camera. The tool is open and we are happy to answer any questions at <a href="mailto:olyprobe@outlook.com">olyprobe@outlook.com</a>.</p>
+    <p class="security-note-body">Code signing certificates for desktop software cost several hundred dollars per year and are issued by certificate authorities that verify the identity of the developer. As beta software from a small independent lab, OlyProbe is not yet signed. This means Windows will flag it with a SmartScreen warning and macOS will require a manual override in System Settings. These warnings are about certificate status, not actual risk. On Windows, click "More info" and then "Run anyway." On macOS, go to System Settings → Privacy &amp; Security and click "Open Anyway" after the first blocked launch attempt. OlyProbe does not connect to the internet during camera operations — it communicates only with your locally connected camera over USB or your local WiFi network. The production release will be properly signed and will not trigger these warnings. We are happy to answer any questions at <a href="mailto:olyprobe@outlook.com">olyprobe@outlook.com</a>.</p>
   </div>
 
   <p class="section-label">System requirements</p>
@@ -447,6 +547,16 @@
 </footer>
 
 <script>
+function openCamerasModal() {
+  document.getElementById('cameras-modal').classList.add('open');
+}
+function closeCamerasModal() {
+  document.getElementById('cameras-modal').classList.remove('open');
+}
+function handleModalClick(e) {
+  if (e.target === document.getElementById('cameras-modal')) closeCamerasModal();
+}
+
 function handleSubscribe() {
   var fname = document.getElementById('fname').value.trim();
   var lname = document.getElementById('lname').value.trim();
