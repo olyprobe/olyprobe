@@ -333,6 +333,11 @@ def api_probe():
         except Exception as e:
             return jsonify(ok=False, error=str(e)), 200
 
+@app.route("/api/prop_labels", methods=["GET"])
+def api_prop_labels():
+    """Return the current property label map so the UI always uses up-to-date labels."""
+    return jsonify(labels=PROP_LABELS)
+
 # ── CHEATS LIBRARY ────────────────────────────────────────────────────────────
 
 def load_cheat_index():
@@ -639,6 +644,11 @@ def api_compare_add():
     path = CHEATS_DIR / f"{cheat_id}.cheat"
     if not path.exists():
         return jsonify(ok=False, error="Cheat not found"), 404
+    # Purge any stale IDs that no longer have a file
+    compare_session[:] = [
+        cid for cid in compare_session
+        if (CHEATS_DIR / f"{cid}.cheat").exists()
+    ]
     if cheat_id not in compare_session:
         if len(compare_session) >= 6:
             return jsonify(ok=False,

@@ -468,6 +468,44 @@
     text-transform: uppercase;
   }
 
+  /* ── VIEW CHEAT OVERLAY ── */
+  .view-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,26,24,0.6);
+    display: flex; align-items: flex-start; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    padding: 32px 16px; overflow-y: auto;
+  }
+  .view-overlay.open { opacity: 1; pointer-events: all; }
+  .view-overlay-panel {
+    background: var(--paper); border-radius: 8px;
+    border: 1px solid var(--rule);
+    width: 100%; max-width: 860px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+  .view-overlay-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 20px 24px; border-bottom: 1px solid var(--rule);
+    background: var(--paper-2);
+  }
+  .view-overlay-title {
+    font-family: var(--serif); font-size: 22px;
+    color: var(--ink); letter-spacing: -0.01em;
+  }
+  .view-overlay-meta {
+    font-size: 12px; color: var(--ink-3); margin-top: 4px;
+    display: flex; gap: 12px;
+  }
+  .view-overlay-close {
+    background: none; border: none; cursor: pointer;
+    font-size: 20px; color: var(--ink-3); padding: 0 0 0 16px;
+    line-height: 1; transition: color 0.15s; flex-shrink: 0;
+  }
+  .view-overlay-close:hover { color: var(--ink); }
+  .view-overlay-body { padding: 20px 24px; }
+
   /* ── PROBE/CREATE SPECIFIC ── */
   .probe-state {
     text-align: center; padding: 48px 32px;
@@ -755,6 +793,22 @@
 
 </main>
 
+<!-- ── VIEW CHEAT OVERLAY ── -->
+<div class="view-overlay" id="view-cheat-overlay" onclick="handleViewOverlayClick(event)">
+  <div class="view-overlay-panel">
+    <div class="view-overlay-header">
+      <div>
+        <p class="view-overlay-title" id="view-overlay-title"></p>
+        <div class="view-overlay-meta" id="view-overlay-meta"></div>
+      </div>
+      <button class="view-overlay-close" onclick="closeViewOverlay()">&#10005;</button>
+    </div>
+    <div class="view-overlay-body">
+      <div id="view-overlay-controls"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── CONFIRM DIALOG ── -->
 <div class="overlay" id="confirm-overlay">
   <div class="dialog">
@@ -784,10 +838,22 @@ var state = {
 };
 
 // ── BOOT ──────────────────────────────────────────────────────
+var PROP_LABELS = {};  // populated from server on load
+
 window.addEventListener('load', function() {
   checkOnline();
-  loadCheats();
-  updateSyncBar();
+  // Fetch labels first, then load cheats so renderControls always has labels
+  fetch('/api/prop_labels')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    PROP_LABELS = data.labels || {};
+    loadCheats();
+    updateSyncBar();
+  })
+  .catch(function() {
+    loadCheats();
+    updateSyncBar();
+  });
   setInterval(updateSyncBar, 30000);
   window.addEventListener('online',  function() { state.isOnline = true;  updateOnlineBadges(); updateSyncBar(); });
   window.addEventListener('offline', function() { state.isOnline = false; updateOnlineBadges(); updateSyncBar(); });
@@ -971,6 +1037,7 @@ function renderLibrary() {
       '</div>' +
       uploadRow +
       '<div class="card-actions">' +
+        '<button class="card-btn" onclick="viewCheat(\'' + esc(c.id) + '\')">View</button>' +
         '<button class="card-btn" onclick="loadCheat(\'' + esc(c.id) + '\')">Load</button>' +
         '<button class="card-btn" onclick="addToCompare(\'' + esc(c.id) + '\')">Compare</button>' +
         '<button class="card-btn danger" onclick="deleteCheat(\'' + esc(c.id) + '\', \'' + esc(c.description) + '\')">Delete</button>' +
@@ -1145,7 +1212,6 @@ function saveCheat() {
 }
 
 // ── CONTROLS RENDERER ─────────────────────────────────────────
-// Flat list for now — grouping to be designed after OM-1 probe data
 function renderControls(containerId, controls) {
   var el = document.getElementById(containerId);
   if (!controls || controls.length === 0) {
@@ -1163,6 +1229,8 @@ function renderControls(containerId, controls) {
 
   controls.forEach(function(ctrl) {
     var readOnly = ctrl.access === 'getonly' || ctrl.access === 'readonly';
+    // Always use current PROP_LABELS, falling back to stored label, then name
+    var label = PROP_LABELS[ctrl.name] || ctrl.label || ctrl.name;
     var valChips = (ctrl.allowed_values || []).map(function(v) {
       var isCurrent = v === ctrl.current_value;
       return '<span class="value-chip' + (isCurrent ? ' current-value' : '') + '">' + esc(String(v)) + '</span>';
@@ -1172,7 +1240,7 @@ function renderControls(containerId, controls) {
       '<div class="controls-row">' +
         '<div class="ctrl-cell">' +
           '<div class="ctrl-name">' + esc(ctrl.name) + '</div>' +
-          '<div class="ctrl-label">' + esc(ctrl.label || '') + (readOnly ? '<span class="ctrl-readonly-badge">read only</span>' : '') + '</div>' +
+          '<div class="ctrl-label">' + esc(label) + (readOnly ? '<span class="ctrl-readonly-badge">read only</span>' : '') + '</div>' +
         '</div>' +
         '<div class="ctrl-cell">' +
           '<span class="ctrl-value' + (readOnly ? ' readonly' : '') + '">' + esc(String(ctrl.current_value || '—')) + '</span>' +
@@ -1327,6 +1395,38 @@ function updateSyncBar() {
     });
   });
 })();
+
+// ── VIEW CHEAT OVERLAY ────────────────────────────────────────
+function viewCheat(id) {
+  fetch('/api/cheats/' + id)
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (!data.ok) { toast('Could not load cheat'); return; }
+    var meta     = data.meta;
+    var controls = data.controls;
+
+    document.getElementById('view-overlay-title').textContent =
+      meta.description || id;
+    document.getElementById('view-overlay-meta').innerHTML =
+      '<span>&#128247; ' + esc(meta.camera_model || 'Unknown camera') + '</span>' +
+      '<span>&#128197; ' + esc((meta.captured_at || '').slice(0,10)) + '</span>' +
+      '<span>' + controls.length + ' controls</span>';
+
+    renderControls('view-overlay-controls', controls);
+    document.getElementById('view-cheat-overlay').classList.add('open');
+  })
+  .catch(function() { toast('Could not load cheat'); });
+}
+
+function closeViewOverlay() {
+  document.getElementById('view-cheat-overlay').classList.remove('open');
+}
+
+function handleViewOverlayClick(e) {
+  if (e.target === document.getElementById('view-cheat-overlay')) {
+    closeViewOverlay();
+  }
+}
 
 // ── COMPARE ───────────────────────────────────────────────────
 function addToCompare(id) {

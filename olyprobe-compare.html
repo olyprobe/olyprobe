@@ -389,21 +389,34 @@
 
 <script>
 var state = {
-  cheats: []   // array of { id, meta, controls }
+  cheats: []
 };
+
+var PROP_LABELS = {};
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('load', function() {
-  // Check for ids in URL params (snapshot/share mode)
-  var params = new URLSearchParams(window.location.search);
-  var ids    = params.get('ids');
-  if (ids) {
-    var idList = ids.split(',').filter(Boolean);
-    loadCheatsById(idList);
-  } else {
-    // Poll server for current comparison session
-    pollComparison();
-  }
+  fetch('/api/prop_labels')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    PROP_LABELS = data.labels || {};
+    var params = new URLSearchParams(window.location.search);
+    var ids    = params.get('ids');
+    if (ids) {
+      loadCheatsById(ids.split(',').filter(Boolean));
+    } else {
+      pollComparison();
+    }
+  })
+  .catch(function() {
+    var params = new URLSearchParams(window.location.search);
+    var ids    = params.get('ids');
+    if (ids) {
+      loadCheatsById(ids.split(',').filter(Boolean));
+    } else {
+      pollComparison();
+    }
+  });
 });
 
 // Poll every 2 seconds for updates from the main UI
@@ -462,7 +475,9 @@ function render() {
   var propMap = {};  // name -> label
   cheats.forEach(function(cheat) {
     (cheat.controls || []).forEach(function(ctrl) {
-      if (!propMap[ctrl.name]) propMap[ctrl.name] = ctrl.label || ctrl.name;
+      if (!propMap[ctrl.name]) {
+        propMap[ctrl.name] = PROP_LABELS[ctrl.name] || ctrl.label || ctrl.name;
+      }
     });
   });
   var propNames = Object.keys(propMap);
@@ -677,9 +692,10 @@ function exportCSV() {
   });
   rows.push(header);
 
-  // Data rows
+  // Data rows — use live PROP_LABELS for property names
   propNames.forEach(function(name) {
-    var row = [propMap[name], name];
+    var label = PROP_LABELS[name] || propMap[name] || name;
+    var row = [label, name];
     cheats.forEach(function(c) {
       var val = valueMaps[c.id][name];
       row.push(val !== undefined && val !== null ? String(val) : '');
