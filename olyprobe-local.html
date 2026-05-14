@@ -633,6 +633,7 @@
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="btn-secondary" onclick="openCheatsFolder()">&#128193; Open folder</button>
+        <button class="btn-secondary" onclick="window.open('http://localhost:5000/compare','olyprobe-compare')">&#9776; Compare</button>
         <button class="btn-primary" id="btn-probe" onclick="startProbe()">
           <span>&#9679;</span> Probe camera
         </button>
@@ -1361,9 +1362,11 @@ function deleteCheat(id, desc) {
 }
 
 function confirmDialogAction() {
+  var idToDelete = pendingDeleteId;
+  var action = state.dialogAction;
   closeDialog();
-  if (state.dialogAction === 'delete' && pendingDeleteId) {
-    fetch('/api/cheats/' + pendingDeleteId, { method: 'DELETE' })
+  if (action === 'delete' && idToDelete) {
+    fetch('/api/cheats/' + idToDelete, { method: 'DELETE' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.ok) {

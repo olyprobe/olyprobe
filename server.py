@@ -299,47 +299,30 @@ def api_probe():
             return jsonify(ok=False, error="No camera connected"), 200
         try:
             camera_client.send_command('switch_cammode', mode='rec', lvqty='0320x0240')
-            settable = camera_client.get_settable_propnames_and_values()
+
+            # Get full property list via desclist — single call returns everything
+            # including current values, access types, and all permitted values
+            resp = camera_client.send_command('get_camprop', com='desc', propname='desclist')
+            root = ET.fromstring(resp.text)
             controls = []
 
-            for name, allowed in settable.items():
-                current = None
-                try:
-                    resp    = camera_client.send_command(
-                                  'get_camprop', com='get', propname=name)
-                    current = xml_value(resp.text)
-                except Exception:
-                    pass
+            for desc in root.findall('desc'):
+                name      = desc.findtext('propname') or ''
+                access    = desc.findtext('attribute') or 'get'
+                current   = desc.findtext('value')
+                enum_text = desc.findtext('enum') or ''
+                allowed   = enum_text.split() if enum_text.strip() else []
+
+                if not name:
+                    continue
+
                 controls.append({
                     "name":           name,
                     "label":          PROP_LABELS.get(name, name),
-                    "access":         "getset",
+                    "access":         "getset" if access == "getset" else "getonly",
                     "current_value":  current,
-                    "allowed_values": allowed if isinstance(allowed, list) else [],
+                    "allowed_values": allowed,
                 })
-
-            readonly_props = [
-                "remainshots", "batterylevel", "mediaid",
-                "focal35mm", "modeinfo", "ValidMediaSlot"
-            ]
-            existing_names = {c["name"] for c in controls}
-            for name in readonly_props:
-                if name in existing_names:
-                    continue
-                try:
-                    resp = camera_client.send_command(
-                               'get_camprop', com='get', propname=name)
-                    val  = xml_value(resp.text)
-                    if val is not None:
-                        controls.append({
-                            "name":           name,
-                            "label":          PROP_LABELS.get(name, name),
-                            "access":         "getonly",
-                            "current_value":  val,
-                            "allowed_values": [],
-                        })
-                except Exception:
-                    pass
 
             return jsonify(
                 ok=True,
