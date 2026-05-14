@@ -1,5 +1,8 @@
 dist/
 build/
-olyprobe.spec
+__pycache__/
+*.pyc
+*.spec
 *.exe
 *.ico
+test.py
