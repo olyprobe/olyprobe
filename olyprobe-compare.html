@@ -261,10 +261,12 @@
     .col-prop-header { min-width: 140px; }
     .cheat-col-remove { display: none; }
     .diff-summary { border: 1px solid #ccc; }
-    .cell-value.diff-missing { background: #fee !important; -webkit-print-color-adjust: exact; }
-    .cell-value.diff-differs { background: #ffe !important; -webkit-print-color-adjust: exact; }
+    .cell-value.diff-missing { background: #fde8e8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cell-value.diff-differs { background: #fdf3d8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .legend-swatch { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .legend { margin-bottom: 8px; }
     .toast { display: none; }
+    .value-popover { display: none; }
   }
     display: flex; gap: 16px; align-items: center;
     margin-bottom: 16px; flex-wrap: wrap;
@@ -273,10 +275,9 @@
     display: flex; align-items: center; gap: 6px;
     font-size: 11px; color: var(--ink-3);
   }
-  .legend-swatch {
-    width: 12px; height: 12px; border-radius: 2px;
-    border: 1px solid var(--rule);
-  }
+  .legend-swatch { font-size: 14px; line-height: 1; }
+  .differs-swatch { color: #c8a000; }
+  .missing-swatch { color: #c87070; }
 
   /* Value popover */
   .value-popover {
@@ -366,14 +367,8 @@
   <div id="comparison-content" style="display:none">
     <div class="diff-summary" id="diff-summary"></div>
     <div class="legend">
-      <div class="legend-item">
-        <div class="legend-swatch" style="background:var(--diff-differs)"></div>
-        Value differs across Cheats
-      </div>
-      <div class="legend-item">
-        <div class="legend-swatch" style="background:var(--diff-missing)"></div>
-        Property not present in this Cheat
-      </div>
+      <div class="legend-item">Value differs across Cheats <span style="color:#c8a000">(Yellow)</span></div>
+      <div class="legend-item">Property not present in this Cheat <span style="color:#c87070">(Pink)</span></div>
     </div>
     <div class="compare-table-wrap">
       <table class="compare-table" id="compare-table">
