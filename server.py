@@ -96,6 +96,7 @@ camera_info   = {}
 
 # Human-readable labels for known OPC property names
 PROP_LABELS = {
+    # Core exposure controls
     "takemode":           "Shooting Mode",
     "shutspeedvalue":     "Shutter Speed",
     "isospeedvalue":      "ISO Speed",
@@ -103,53 +104,171 @@ PROP_LABELS = {
     "expcomp":            "Exposure Compensation",
     "drivemode":          "Drive Mode",
     "wbvalue":            "White Balance",
+    "exposemovie":        "Movie Exposure Mode",
+    # Drive and timing
+    "cameradrivemode":    "Current Drive Mode",
+    "lowvibtime":         "Anti-Shock Delay (Low Vibration)",
+    "SilentTime":         "Anti-Shock Delay (Silent)",
+    "bulbtimelimit":      "Bulb Time Limit",
+    # Image quality
+    "imagequality":       "Image Quality",
+    "imagesize":          "Image Size",
+    "colorspace":         "Color Space",
+    "noisereduction":     "Noise Reduction",
+    "NoiseReductionExposureTime": "Noise Reduction Exposure Time",
+    "SilentNoiseReduction": "Silent Noise Reduction",
+    "QualityMovie2":      "Movie Quality",
+    "qualitymovie":       "Movie Quality (Legacy)",
+    # Creative modes
     "colortone":          "Picture Mode",
     "artfilter":          "Art Filter",
     "colorphase":         "Color Phase",
-    "imagesize":          "Image Size",
-    "imagequality":       "Image Quality",
+    "SceneSub":           "Scene Sub-Mode",
+    # Art Filter types
+    "ArtEffectTypePopart":          "Pop Art Type",
+    "ArtEffectTypeRoughMonochrome": "Rough Monochrome Type",
+    "ArtEffectTypeToyPhoto":        "Toy Photo Type",
+    "ArtEffectTypeDaydream":        "Daydream Type",
+    "ArtEffectTypeCrossProcess":    "Cross Process Type",
+    "ArtEffectTypeDramaticTone":    "Dramatic Tone Type",
+    "ArtEffectTypeLigneClair":      "Ligne Clair Type",
+    "ArtEffectTypePastel":          "Pastel Type",
+    "ArtEffectTypeMiniature":       "Miniature Type",
+    "ArtEffectTypeVintage":         "Vintage Type",
+    "ArtEffectTypePartcolor":       "Part Color Type",
+    "ArtEffectTypeBleachBypass":    "Bleach Bypass Type",
+    "ArtEffectTypeFantasicFocus":   "Fantastic Focus Type",
+    "ArtEffectTypeLightTone":       "Light Tone Type",
+    "ArtEffectTypeGentleSepia":     "Gentle Sepia Type",
+    # Focus and AF
     "afmode":             "AF Mode",
-    "focal35mm":          "Focal Length (35mm equiv)",
-    "recview":            "Rec View",
-    "remainshots":        "Remaining Shots",
-    "batterylevel":       "Battery Level",
-    "mediaid":            "Media ID",
-    "exposemovie":        "Movie Exposure Mode",
-    "qualitymovie":       "Movie Quality",
-    "QualityMovie2":      "Movie Quality 2",
-    "modeinfo":           "Mode Info",
-    "liveviewquality":    "Live View Quality",
-    "destination":        "Save Destination",
-    "colorspace":         "Color Space",
-    "noisefilter":        "Noise Filter",
-    "noisereduction":     "Noise Reduction",
-    "digitalzoom":        "Digital Zoom",
-    "antiflicker":        "Anti-Flicker",
     "afarea":             "AF Area",
     "facedetect":         "Face Detection",
     "eyedetect":          "Eye Detection",
+    "touchactiveframe":   "Touch AF Frame Position",
+    "digitaltelecon":     "Digital Teleconverter",
+    "supermacrozoom":     "Super Macro Zoom",
+    "focal35mm":          "Focal Length (35mm equiv)",
+    # Bracketing and computational
     "bracketmode":        "Bracket Mode",
     "bracketnum":         "Bracket Count",
     "bracketstep":        "Bracket Step",
-    "intervaltime":       "Interval Time",
-    "intervalnum":        "Interval Count",
-    "bulbtime":           "Bulb Timer",
-    "bulbtimelimit":      "Bulb Time Limit",
     "livecomposite":      "Live Composite",
     "focusbracket":       "Focus Bracket",
     "hdrshooting":        "HDR Shooting",
     "multiexposure":      "Multi Exposure",
     "pixelshift":         "Pixel Shift",
-    "touchactiveframe":   "Touch Active Frame",
-    "lowvibtime":         "Anti-Shock Time",
-    "digitaltelecon":     "Digital Teleconverter",
-    "supermacrozoom":     "Super Macro Zoom",
-    "cameradrivemode":    "Camera Drive Mode",
-    "SilentTime":         "Silent Mode Time",
-    "SilentNoiseReduction": "Silent Noise Reduction",
-    "NoiseReductionExposureTime": "Noise Reduction Exposure Time",
+    "stardetect":         "Star Detection",
+    "intervaltime":       "Interval Time",
+    "intervalnum":        "Interval Count",
+    "bulbtime":           "Bulb Timer",
+    # Camera status
+    "remainshots":        "Remaining Shots",
+    "batterylevel":       "Battery Level",
+    "mediaid":            "Media ID",
+    "modeinfo":           "Mode Info",
     "ValidMediaSlot":     "Active Media Slot",
+    "recview":            "Rec View",
+    # Misc
+    "noisefilter":        "Noise Filter",
+    "digitalzoom":        "Digital Zoom",
+    "antiflicker":        "Anti-Flicker",
+    "liveviewquality":    "Live View Quality",
+    "destination":        "Save Destination",
 }
+
+# ── ONTOLOGY ──────────────────────────────────────────────────────────────────
+# Defines property grouping for display.
+# Properties not in any group appear in "Other" automatically.
+# Add new properties here as new camera models reveal them.
+
+ONTOLOGY = [
+    {
+        "id": "exposure",
+        "label": "Exposure",
+        "default_expanded": True,
+        "properties": [
+            "takemode", "shutspeedvalue", "focalvalue", "isospeedvalue",
+            "expcomp", "exposemovie", "bulbtimelimit", "wbvalue",
+        ]
+    },
+    {
+        "id": "drive",
+        "label": "Drive & Timing",
+        "default_expanded": True,
+        "properties": [
+            "drivemode", "lowvibtime", "SilentTime",
+        ]
+    },
+    {
+        "id": "focus",
+        "label": "Focus",
+        "default_expanded": False,
+        "properties": [
+            "afmode", "afarea", "facedetect", "eyedetect",
+            "touchactiveframe", "digitaltelecon", "supermacrozoom", "focal35mm",
+        ]
+    },
+    {
+        "id": "creative",
+        "label": "Creative",
+        "default_expanded": False,
+        "properties": [
+            "artfilter", "colortone", "colorphase", "SceneSub",
+            "ArtEffectTypePopart", "ArtEffectTypeRoughMonochrome",
+            "ArtEffectTypeToyPhoto", "ArtEffectTypeDaydream",
+            "ArtEffectTypeCrossProcess", "ArtEffectTypeDramaticTone",
+            "ArtEffectTypeLigneClair", "ArtEffectTypePastel",
+            "ArtEffectTypeMiniature", "ArtEffectTypeVintage",
+            "ArtEffectTypePartcolor", "ArtEffectTypeBleachBypass",
+            "ArtEffectTypeFantasicFocus", "ArtEffectTypeLightTone",
+            "ArtEffectTypeGentleSepia",
+        ]
+    },
+    {
+        "id": "image_quality",
+        "label": "Image Quality",
+        "default_expanded": False,
+        "properties": [
+            "imagequality", "imagesize", "colorspace",
+            "noisereduction", "NoiseReductionExposureTime",
+            "SilentNoiseReduction", "noisefilter",
+        ]
+    },
+    {
+        "id": "video",
+        "label": "Video",
+        "default_expanded": False,
+        "properties": [
+            "QualityMovie2", "qualitymovie",
+        ]
+    },
+    {
+        "id": "status",
+        "label": "Camera Status",
+        "default_expanded": False,
+        "properties": [
+            "cameradrivemode", "remainshots", "batterylevel",
+            "ValidMediaSlot", "modeinfo", "mediaid", "recview",
+            "liveviewquality", "destination",
+        ]
+    },
+    {
+        "id": "computational",
+        "label": "Advanced / Computational",
+        "default_expanded": False,
+        "properties": [
+            "bracketmode", "bracketnum", "bracketstep",
+            "livecomposite", "hdrshooting", "multiexposure",
+            "pixelshift", "focusbracket", "intervaltime",
+            "intervalnum", "bulbtime", "stardetect",
+            "digitalzoom", "antiflicker",
+        ]
+    },
+]
+
+# Lookup set of all classified property names
+ONTOLOGY_PROP_SET = set(p for group in ONTOLOGY for p in group["properties"])
 
 def xml_value(response_text):
     """Extract value from OPC XML response like <get><value>M</value></get>"""
@@ -338,12 +457,36 @@ def api_prop_labels():
     """Return the current property label map so the UI always uses up-to-date labels."""
     return jsonify(labels=PROP_LABELS)
 
+@app.route("/api/ontology", methods=["GET"])
+def api_ontology():
+    """Return the property ontology (groups, labels, default expanded state)."""
+    return jsonify(ontology=ONTOLOGY)
+
 # ── CHEATS LIBRARY ────────────────────────────────────────────────────────────
+
+ORDER_FILE = CHEATS_DIR / ".order.json"
+
+def load_order():
+    """Load custom order from file. Returns list of cheat IDs or None if not set."""
+    try:
+        if ORDER_FILE.exists():
+            return json.loads(ORDER_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return None
+
+def save_order(order):
+    """Save custom order to file."""
+    ORDER_FILE.write_text(json.dumps(order), encoding="utf-8")
+
+def clear_order():
+    """Remove custom order file, reverting to default oldest-first."""
+    if ORDER_FILE.exists():
+        ORDER_FILE.unlink()
 
 def load_cheat_index():
     cheats = []
-    for f in sorted(CHEATS_DIR.glob("*.cheat"),
-                    key=lambda p: p.stat().st_mtime, reverse=True):
+    for f in CHEATS_DIR.glob("*.cheat"):
         try:
             meta, controls = read_cheat(f)
             cheats.append({
@@ -351,21 +494,56 @@ def load_cheat_index():
                 "filename":       f.name,
                 "category":       meta.get("category", ""),
                 "description":    meta.get("description", f.stem),
+                "notes":          meta.get("notes", ""),
                 "camera_model":   meta.get("camera_model", ""),
                 "firmware":       meta.get("firmware", ""),
                 "captured_at":    meta.get("captured_at", ""),
                 "control_count":  len(controls),
                 "upload_pending": meta.get("upload_pending", False),
                 "uploaded":       meta.get("uploaded", False),
+                "mtime":          f.stat().st_mtime,
             })
         except Exception:
             pass
-    return cheats
+
+    custom_order = load_order()
+    if custom_order:
+        # Apply custom order — put ordered items first, append any new ones at end
+        order_map = {cid: i for i, cid in enumerate(custom_order)}
+        ordered   = sorted(cheats, key=lambda c: order_map.get(c["id"], len(custom_order)))
+        is_custom = True
+    else:
+        # Default: oldest first (ascending mtime)
+        ordered   = sorted(cheats, key=lambda c: c["mtime"])
+        is_custom = False
+
+    # Remove mtime from output
+    for c in ordered:
+        c.pop("mtime", None)
+
+    return ordered, is_custom
 
 @app.route("/api/cheats", methods=["GET"])
 def api_cheats_list():
-    pending = sum(1 for c in load_cheat_index() if c.get("upload_pending"))
-    return jsonify(cheats=load_cheat_index(), pending_count=pending)
+    cheats, is_custom = load_cheat_index()
+    pending = sum(1 for c in cheats if c.get("upload_pending"))
+    return jsonify(cheats=cheats, pending_count=pending, is_custom_order=is_custom)
+
+@app.route("/api/cheats/order", methods=["POST"])
+def api_save_order():
+    """Save custom drag-drop order."""
+    body  = request.get_json(force=True)
+    order = body.get("order", [])
+    if not isinstance(order, list):
+        return jsonify(ok=False, error="Order must be a list"), 400
+    save_order(order)
+    return jsonify(ok=True)
+
+@app.route("/api/cheats/order", methods=["DELETE"])
+def api_reset_order():
+    """Reset to default oldest-first order."""
+    clear_order()
+    return jsonify(ok=True)
 
 @app.route("/api/cheats/<cheat_id>", methods=["GET"])
 def api_cheat_detail(cheat_id):
@@ -548,6 +726,7 @@ def api_save_cheat():
     body        = request.get_json(force=True)
     category    = body.get("category", "").strip()
     description = body.get("description", "").strip()
+    notes       = body.get("notes", "").strip()
     probe_data  = body.get("probe_data", {})
 
     if not category or not description:
@@ -555,14 +734,31 @@ def api_save_cheat():
     if not probe_data or not probe_data.get("controls"):
         return jsonify(ok=False, error="No probe data"), 400
 
-    slug     = "".join(c if c.isalnum() else "_" for c in description.lower())[:32]
+    # Check for duplicate descriptions — auto-suffix with (2), (3) etc.
+    existing_descriptions = set()
+    for f in CHEATS_DIR.glob("*.cheat"):
+        try:
+            meta, _ = read_cheat(f)
+            existing_descriptions.add(meta.get("description", "").strip().lower())
+        except Exception:
+            pass
+
+    final_description = description
+    if description.lower() in existing_descriptions:
+        n = 2
+        while f"{description} ({n})".lower() in existing_descriptions:
+            n += 1
+        final_description = f"{description} ({n})"
+
+    slug     = "".join(c if c.isalnum() else "_" for c in final_description.lower())[:32]
     ts       = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
     cheat_id = f"{ts}_{slug}"
     path     = CHEATS_DIR / f"{cheat_id}.cheat"
 
     meta = {
         "category":      category,
-        "description":   description,
+        "description":   final_description,
+        "notes":         notes,
         "camera_model":  probe_data.get("model", camera_info.get("model", "Unknown")),
         "firmware":      probe_data.get("firmware", camera_info.get("firmware", "")),
         "captured_at":   datetime.now(timezone.utc).isoformat(),
@@ -572,7 +768,28 @@ def api_save_cheat():
 
     try:
         write_cheat(path, meta, probe_data["controls"])
-        return jsonify(ok=True, cheat_id=cheat_id, filename=path.name)
+        return jsonify(ok=True, cheat_id=cheat_id, filename=path.name,
+                       description=final_description)
+    except Exception as e:
+        return jsonify(ok=False, error=str(e)), 500
+
+@app.route("/api/cheats/<cheat_id>/update_meta", methods=["POST"])
+def api_update_cheat_meta(cheat_id):
+    """Update metadata fields of an existing cheat without changing controls."""
+    safe = all(c.isalnum() or c in "-_" for c in cheat_id)
+    if not safe:
+        return jsonify(ok=False, error="Invalid ID"), 400
+    path = CHEATS_DIR / f"{cheat_id}.cheat"
+    if not path.exists():
+        return jsonify(ok=False, error="Not found"), 404
+    body = request.get_json(force=True)
+    updates = {}
+    for field in ["category", "description", "notes"]:
+        if field in body:
+            updates[field] = body[field].strip()
+    try:
+        update_cheat_meta(path, updates)
+        return jsonify(ok=True)
     except Exception as e:
         return jsonify(ok=False, error=str(e)), 500
 
@@ -677,6 +894,13 @@ def open_browser():
     webbrowser.open("http://localhost:5000")
 
 if __name__ == "__main__":
+    # Kill any running installed instances so dev server can take port 5000
+    import subprocess
+    subprocess.call(
+        ["taskkill", "/F", "/IM", "olyprobe.exe"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
     print("=" * 52)
     print("  OlyProbe — local server")
     print(f"  Cheats folder: {CHEATS_DIR}")
