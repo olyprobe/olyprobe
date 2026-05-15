@@ -793,6 +793,101 @@ def api_update_cheat_meta(cheat_id):
     except Exception as e:
         return jsonify(ok=False, error=str(e)), 500
 
+@app.route("/api/load_cheat", methods=["POST"])
+def api_load_cheat():
+    """
+    Returns cheat data combined with live camera probe for compatibility analysis.
+    Probes the connected camera and compares against the cheat's controls.
+    """
+    body     = request.get_json(force=True)
+    cheat_id = body.get("cheat_id", "")
+    path     = CHEATS_DIR / f"{cheat_id}.cheat"
+
+    if not path.exists():
+        return jsonify(ok=False, error="Cheat file not found"), 404
+
+    with camera_lock:
+        if not camera_client:
+            return jsonify(ok=False, error="No camera connected"), 200
+
+        try:
+            # Load the cheat
+            meta, cheat_controls = read_cheat(path)
+
+            # Probe the connected camera
+            camera_client.send_command('switch_cammode', mode='rec', lvqty='0320x0240')
+            resp = camera_client.send_command('get_camprop', com='desc', propname='desclist')
+            root = ET.fromstring(resp.text)
+
+            # Build camera property map: name -> { current, access, allowed }
+            camera_props = {}
+            for desc in root.findall('desc'):
+                name      = desc.findtext('propname') or ''
+                access    = desc.findtext('attribute') or 'get'
+                current   = desc.findtext('value')
+                enum_text = desc.findtext('enum') or ''
+                allowed   = enum_text.split() if enum_text.strip() else []
+                if name:
+                    camera_props[name] = {
+                        "access":  access,
+                        "current": current,
+                        "allowed": allowed,
+                    }
+
+            # Build compatibility report
+            ready       = []  # exact match available
+            no_match    = []  # property exists but value not available
+            not_applicable = []  # property not on target camera
+
+            for ctrl in cheat_controls:
+                name  = ctrl.get("name")
+                value = ctrl.get("current_value")
+                access = ctrl.get("access", "getset")
+
+                # Skip read-only properties — can't set them anyway
+                if access == "getonly":
+                    continue
+
+                if name not in camera_props:
+                    not_applicable.append({
+                        "name":          name,
+                        "label":         PROP_LABELS.get(name, name),
+                        "source_value":  value,
+                    })
+                else:
+                    cam_prop = camera_props[name]
+                    allowed  = cam_prop["allowed"]
+                    if value in allowed or not allowed:
+                        ready.append({
+                            "name":          name,
+                            "label":         PROP_LABELS.get(name, name),
+                            "source_value":  value,
+                            "selected":      value,
+                            "allowed":       allowed,
+                            "camera_current": cam_prop["current"],
+                        })
+                    else:
+                        no_match.append({
+                            "name":          name,
+                            "label":         PROP_LABELS.get(name, name),
+                            "source_value":  value,
+                            "selected":      None,  # user must choose
+                            "allowed":       allowed,
+                            "camera_current": cam_prop["current"],
+                        })
+
+            return jsonify(
+                ok=True,
+                meta=meta,
+                camera_model=camera_info.get("model", "Unknown"),
+                ready=ready,
+                no_match=no_match,
+                not_applicable=not_applicable,
+            )
+
+        except Exception as e:
+            return jsonify(ok=False, error=str(e)), 500
+
 # ── APPLY CHEAT TO CAMERA ─────────────────────────────────────────────────────
 
 @app.route("/api/apply_cheat", methods=["POST"])
@@ -818,6 +913,38 @@ def api_apply_cheat():
                     continue
                 name  = ctrl.get("name")
                 value = ctrl.get("current_value")
+                if not name or value is None:
+                    skipped += 1
+                    continue
+                try:
+                    camera_client.send_command(
+                        'set_camprop', com='set',
+                        propname=name, value=str(value))
+                    applied += 1
+                except Exception as e:
+                    errors.append(f"{name}: {e}")
+                    skipped += 1
+            return jsonify(ok=True, applied=applied,
+                           skipped=skipped, errors=errors)
+        except Exception as e:
+            return jsonify(ok=False, error=str(e)), 500
+
+@app.route("/api/apply_settings", methods=["POST"])
+def api_apply_settings():
+    """Apply a list of {name, value} pairs to the connected camera."""
+    body     = request.get_json(force=True)
+    settings = body.get("settings", [])
+
+    with camera_lock:
+        if not camera_client:
+            return jsonify(ok=False, error="No camera connected"), 200
+        try:
+            applied = 0
+            skipped = 0
+            errors  = []
+            for s in settings:
+                name  = s.get("name")
+                value = s.get("value")
                 if not name or value is None:
                     skipped += 1
                     continue

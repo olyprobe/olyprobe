@@ -543,7 +543,115 @@
   .view-overlay-close:hover { color: var(--ink); }
   .view-overlay-body { padding: 20px 24px; }
 
-  /* Notes tooltip — positioned via JS to escape card overflow */
+  /* ── LOAD MODAL ── */
+  .load-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,26,24,0.6);
+    display: flex; align-items: flex-start; justify-content: center;
+    z-index: 210; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    padding: 24px 16px; overflow-y: auto;
+  }
+  .load-modal-overlay.open { opacity: 1; pointer-events: all; }
+  .load-modal {
+    background: var(--paper); border-radius: 8px;
+    border: 1px solid var(--rule);
+    width: 100%; max-width: 720px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+  .load-modal-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--rule);
+    background: var(--paper-2);
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .load-modal-title {
+    font-family: var(--serif); font-size: 22px;
+    color: var(--ink); margin-bottom: 4px;
+  }
+  .load-modal-meta {
+    font-size: 12px; color: var(--ink-3);
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .load-modal-body { padding: 20px 24px; }
+  .load-modal-probing {
+    text-align: center; padding: 40px;
+    font-size: 14px; color: var(--ink-3);
+  }
+  .load-modal-probing-dot {
+    animation: pulse 1s infinite;
+    font-size: 24px; display: block; margin-bottom: 12px;
+  }
+
+  /* Compatibility sections */
+  .compat-section { margin-bottom: 20px; }
+  .compat-section-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 6px 6px 0 0;
+    font-size: 11px; font-weight: 500; letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .compat-section-header.ready {
+    background: var(--accent-light); color: var(--accent);
+    border: 1px solid var(--accent-mid); border-bottom: none;
+  }
+  .compat-section-header.no-match {
+    background: var(--status-warn-bg); color: var(--status-warn);
+    border: 1px solid #c8a000; border-bottom: none;
+  }
+  .compat-section-header.not-applicable {
+    background: var(--paper-2); color: var(--ink-3);
+    border: 1px solid var(--rule); border-bottom: none;
+  }
+  .compat-section-count {
+    margin-left: auto; font-size: 10px;
+    background: rgba(255,255,255,0.5);
+    padding: 1px 6px; border-radius: 8px;
+  }
+  .compat-table {
+    width: 100%; border-collapse: collapse;
+    border: 1px solid var(--rule); border-radius: 0 0 6px 6px;
+    overflow: hidden; font-size: 12px;
+  }
+  .compat-row {
+    display: grid;
+    grid-template-columns: 180px 100px 1fr;
+    border-bottom: 1px solid var(--rule);
+    align-items: center;
+  }
+  .compat-row:last-child { border-bottom: none; }
+  .compat-row.header-row {
+    background: var(--paper-2);
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .compat-cell { padding: 8px 12px; }
+  .compat-prop-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+  .compat-prop-api  { font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+  .compat-source-val { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .compat-source-val.unavailable { color: var(--status-warn); text-decoration: line-through; }
+  .compat-na-val { font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+
+  .compat-select {
+    width: 100%; font-family: var(--mono); font-size: 11px;
+    padding: 4px 6px; border: 1px solid var(--rule);
+    border-radius: 4px; background: var(--paper);
+    color: var(--ink); outline: none;
+    transition: border-color 0.15s;
+  }
+  .compat-select:focus { border-color: var(--accent-mid); }
+
+  .load-modal-footer {
+    padding: 16px 24px; border-top: 1px solid var(--rule);
+    background: var(--paper-2);
+    display: flex; gap: 10px; align-items: center;
+  }
+  .load-modal-summary {
+    font-size: 12px; color: var(--ink-3); margin-left: auto;
+  }
+
+  /* ── NOTES TOOLTIP ── */
   .card-notes-tooltip {
     position: fixed;
     background: var(--ink);
@@ -955,6 +1063,33 @@
 
 </main>
 
+<!-- ── LOAD MODAL ── -->
+<div class="load-modal-overlay" id="load-modal-overlay" onclick="handleLoadModalClick(event)">
+  <div class="load-modal">
+    <div class="load-modal-header">
+      <div>
+        <p class="load-modal-title" id="load-modal-title"></p>
+        <div class="load-modal-meta" id="load-modal-meta"></div>
+      </div>
+      <button class="view-overlay-close" onclick="closeLoadModal()">&#10005;</button>
+    </div>
+    <div class="load-modal-body" id="load-modal-body">
+      <div class="load-modal-probing" id="load-modal-probing">
+        <span class="load-modal-probing-dot">&#9679;</span>
+        Probing camera...
+      </div>
+      <div id="load-modal-content" style="display:none"></div>
+    </div>
+    <div class="load-modal-footer" id="load-modal-footer" style="display:none">
+      <button class="btn-primary" id="btn-apply-camera" onclick="applyLoadModal()">
+        &#8659; Apply to camera
+      </button>
+      <button class="btn-secondary" onclick="closeLoadModal()">Cancel</button>
+      <span class="load-modal-summary" id="load-modal-summary"></span>
+    </div>
+  </div>
+</div>
+
 <!-- ── NOTES TOOLTIP ── -->
 <div class="card-notes-tooltip" id="notes-tooltip"></div>
 
@@ -1271,27 +1406,215 @@ function renderLibrary() {
   initDragDrop();
 }
 
-// ── CHEAT DETAIL ──────────────────────────────────────────────
+// ── LOAD MODAL ────────────────────────────────────────────────
+var loadModalData = null;  // { ready, no_match, not_applicable }
+
 function loadCheat(id) {
-  var cheat = state.cheats.find(function(c) { return c.id === id; });
-  if (!cheat) return;
-  state.currentCheat = cheat;
+  if (state.connStatus !== 'connected') {
+    toast('Connect a camera first to load a Cheat');
+    return;
+  }
 
-  document.getElementById('detail-nav-title').textContent = cheat.description;
-  document.getElementById('detail-category').textContent = cheat.category;
-  document.getElementById('detail-category').style.color = catColor(cheat.category);
-  document.getElementById('detail-title').textContent = cheat.description;
-  document.getElementById('detail-meta').innerHTML =
-    '<span>&#128247; ' + esc(cheat.camera_model || 'Unknown camera') + '</span>' +
-    '<span>&#128197; ' + esc(cheat.captured_at ? cheat.captured_at.slice(0,10) : 'Unknown date') + '</span>' +
-    '<span>' + (cheat.controls ? cheat.controls.length : 0) + ' controls</span>';
+  // Show modal with probing state
+  document.getElementById('load-modal-probing').style.display = 'block';
+  document.getElementById('load-modal-content').style.display = 'none';
+  document.getElementById('load-modal-footer').style.display  = 'none';
+  document.getElementById('load-modal-title').textContent     = 'Loading...';
+  document.getElementById('load-modal-meta').innerHTML        = '';
+  document.getElementById('load-modal-overlay').classList.add('open');
+  loadModalData = null;
 
-  // Send to camera button: only if connected
-  document.getElementById('btn-send-to-camera').disabled = (state.connStatus !== 'connected');
+  fetch('/api/load_cheat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cheat_id: id })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (!data.ok) {
+      toast(data.error || 'Could not load cheat');
+      closeLoadModal();
+      return;
+    }
+    loadModalData = data;
+    renderLoadModal(data);
+  })
+  .catch(function() {
+    toast('Could not load cheat');
+    closeLoadModal();
+  });
+}
 
-  renderControls('detail-controls', cheat.controls || []);
-  updateOnlineBadges();
-  showView('detail');
+function renderLoadModal(data) {
+  var meta = data.meta;
+  document.getElementById('load-modal-title').textContent = meta.description || '';
+  document.getElementById('load-modal-meta').innerHTML =
+    '<span>&#128247; ' + esc(meta.camera_model || '') + ' → ' + esc(data.camera_model) + '</span>' +
+    '<span>&#128197; ' + esc((meta.captured_at || '').slice(0,10)) + '</span>';
+
+  var html = '';
+
+  // Ready section
+  if (data.ready.length > 0) {
+    html += buildCompatSection('ready', 'Ready to apply', data.ready);
+  }
+
+  // No match section
+  if (data.no_match.length > 0) {
+    html += buildCompatSection('no-match', 'No exact match — choose a value', data.no_match);
+  }
+
+  // Not applicable section
+  if (data.not_applicable.length > 0) {
+    html += buildCompatSection('not-applicable', 'Not applicable on target camera', data.not_applicable);
+  }
+
+  if (html === '') {
+    html = '<p style="color:var(--ink-3);font-size:13px;padding:16px 0;">No settable properties found.</p>';
+  }
+
+  document.getElementById('load-modal-content').innerHTML = html;
+  document.getElementById('load-modal-probing').style.display = 'none';
+  document.getElementById('load-modal-content').style.display = 'block';
+  document.getElementById('load-modal-footer').style.display  = 'flex';
+
+  updateLoadModalSummary(data);
+}
+
+function buildCompatSection(type, label, items) {
+  var html =
+    '<div class="compat-section">' +
+      '<div class="compat-section-header ' + type + '">' +
+        esc(label) +
+        '<span class="compat-section-count">' + items.length + '</span>' +
+      '</div>' +
+      '<div class="compat-table">' +
+        '<div class="compat-row header-row">' +
+          '<div class="compat-cell">Property</div>' +
+          '<div class="compat-cell">Source value</div>' +
+          '<div class="compat-cell">' + (type === 'not-applicable' ? 'Status' : 'Apply value') + '</div>' +
+        '</div>';
+
+  items.forEach(function(item) {
+    html += '<div class="compat-row">' +
+      '<div class="compat-cell">' +
+        '<div class="compat-prop-name">' + esc(item.label) + '</div>' +
+        '<div class="compat-prop-api">' + esc(item.name) + '</div>' +
+      '</div>' +
+      '<div class="compat-cell">' +
+        '<span class="compat-source-val' + (type === 'no-match' ? ' unavailable' : '') + '">' +
+          esc(String(item.source_value || '—')) +
+        '</span>' +
+      '</div>' +
+      '<div class="compat-cell">';
+
+    if (type === 'ready') {
+      // Dropdown pre-selected to source value, user can change
+      html += '<select class="compat-select" id="compat_' + esc(item.name) + '" onchange="updateLoadModalSummary(loadModalData)">';
+      (item.allowed || []).forEach(function(v) {
+        html += '<option value="' + esc(v) + '"' + (v === item.source_value ? ' selected' : '') + '>' + esc(v) + '</option>';
+      });
+      html += '</select>';
+    } else if (type === 'no-match') {
+      // Dropdown with "Leave unchanged" + all allowed values
+      html += '<select class="compat-select" id="compat_' + esc(item.name) + '" onchange="updateLoadModalSummary(loadModalData)">' +
+        '<option value="">Leave unchanged</option>';
+      (item.allowed || []).forEach(function(v) {
+        html += '<option value="' + esc(v) + '">' + esc(v) + '</option>';
+      });
+      html += '</select>';
+    } else {
+      // Not applicable
+      html += '<span style="font-size:11px;color:var(--ink-3);">Will be skipped</span>';
+    }
+
+    html += '</div></div>';
+  });
+
+  html += '</div></div>';
+  return html;
+}
+
+function updateLoadModalSummary(data) {
+  if (!data) return;
+  var toApply = data.ready.length;
+  // Count no-match items where user selected a value
+  data.no_match.forEach(function(item) {
+    var sel = document.getElementById('compat_' + item.name);
+    if (sel && sel.value) toApply++;
+  });
+  var summary = toApply + ' setting' + (toApply !== 1 ? 's' : '') + ' will be applied';
+  if (data.no_match.length > 0) {
+    var pending = data.no_match.filter(function(item) {
+      var sel = document.getElementById('compat_' + item.name);
+      return !sel || !sel.value;
+    }).length;
+    if (pending > 0) summary += ' · ' + pending + ' pending your choice';
+  }
+  if (data.not_applicable.length > 0) {
+    summary += ' · ' + data.not_applicable.length + ' skipped';
+  }
+  document.getElementById('load-modal-summary').textContent = summary;
+}
+
+function applyLoadModal() {
+  if (!loadModalData) return;
+  var settings = [];
+
+  // Ready items — use selected value from dropdown
+  loadModalData.ready.forEach(function(item) {
+    var sel = document.getElementById('compat_' + item.name);
+    var value = sel ? sel.value : item.source_value;
+    if (value !== null && value !== undefined) {
+      settings.push({ name: item.name, value: value });
+    }
+  });
+
+  // No-match items — only if user selected a value
+  loadModalData.no_match.forEach(function(item) {
+    var sel = document.getElementById('compat_' + item.name);
+    if (sel && sel.value) {
+      settings.push({ name: item.name, value: sel.value });
+    }
+  });
+
+  if (settings.length === 0) {
+    toast('No settings to apply');
+    return;
+  }
+
+  var btn = document.getElementById('btn-apply-camera');
+  btn.disabled = true;
+  btn.textContent = 'Applying...';
+
+  fetch('/api/apply_settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ settings: settings })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      toast(data.applied + ' settings applied to camera');
+      closeLoadModal();
+    } else {
+      toast('Apply failed: ' + (data.error || 'unknown'));
+    }
+  })
+  .catch(function() { toast('Apply failed'); })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = '↙ Apply to camera';
+  });
+}
+
+function closeLoadModal() {
+  document.getElementById('load-modal-overlay').classList.remove('open');
+  loadModalData = null;
+}
+
+function handleLoadModalClick(e) {
+  if (e.target === document.getElementById('load-modal-overlay')) closeLoadModal();
 }
 
 function sendToCamera() {
