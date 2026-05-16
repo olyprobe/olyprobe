@@ -357,6 +357,224 @@ def compare_page():
         return send_file(COMPARE_FILE, max_age=0)
     return "<h2>olyprobe-compare.html not found next to server.py</h2>", 404
 
+
+# ── USB TETHERING ─────────────────────────────────────────────────────────────
+
+def is_usb_permitted():
+    """Permission hook for USB tethering. Returns True during development."""
+    return True
+
+
+class USBCameraProxy:
+    """
+    Wraps the USB camera bridge to present the same interface
+    as OlympusCamera for use in server.py endpoints.
+    """
+    OLY_GUID = "4D545058-8900-40B3-8F1D-DC246E1E8370"
+
+    WIFI_TO_MTP = {
+        "expcomp":        0xD008,
+        "shutspeedvalue": 0xD01C,
+        "focalvalue":     0xD002,
+        "isospeedvalue":  0xD1C0,
+        "wbvalue":        0xD01E,
+        "colortone":      0xD010,
+        "afmode":         0xD003,
+        "drivemode":      0xD009,
+        "imagequality":   0xD0C7,
+        "exposemovie":    0xD08C,
+        "flashmode":      0xD005,
+        "flashcomp":      0xD00F,
+        "meteringmode":   0xD004,
+        "subjectdetect":  0xD1D0,
+        "highresshot":    0xD1B9,
+        "hdr":            0xD0AD,
+        "wbcompa":        0xD033,
+        "wbcompg":        0xD034,
+        "rawmode":        0xD00D,
+    }
+
+    USB_LABELS = {
+        0xD005: "Flash Mode",
+        0xD00F: "Flash Compensation",
+        0xD004: "Metering Mode",
+        0xD1D0: "Subject Detection",
+        0xD1B9: "High Res Shot",
+        0xD0AD: "HDR",
+        0xD033: "WB Compensation A",
+        0xD034: "WB Compensation G",
+        0xD00D: "RAW Mode",
+    }
+
+    USB_ENUMS = {
+        0xD009: {0x01:"Single frame",0x07:"Single frame silent",
+                 0x21:"Sequential",0x27:"Silent sequential",
+                 0x28:"High speed sequential 1",0x29:"High speed sequential 2",
+                 0x48:"Pro Cap SH1",0x49:"Pro Cap SH2",
+                 0x04:"Self-timer 12s",0x05:"Self-timer 2s",
+                 0x24:"Silent self-timer 2s",0x06:"Custom self-timer"},
+        0xD004: {0x8001:"Digital ESP",0x0002:"Center weighted",
+                 0x0004:"Spot",0x8011:"Spot highlight",0x8012:"Spot shadow"},
+        0xD1D0: {1:"Off",2:"Human",3:"Motorsports",4:"Airplanes",
+                 5:"Trains",6:"Birds",7:"Dogs and cats"},
+        0xD1B9: {1:"Off",2:"On tripod",3:"On handheld"},
+        0xD003: {0x0002:"S-AF",0x8002:"C-AF",0x0003:"MF",
+                 0x8003:"Preset MF",0x8004:"Starry Sky AF"},
+        0xD005: {1:"Auto",2:"Off",3:"On/Fill",4:"Red-eye",5:"Slow sync",
+                 6:"Slow sync red-eye"},
+        0xD01E: {1:"Auto",2:"Sunny",3:"Shade",4:"Cloudy",5:"Incandescent",
+                 6:"Fluorescent",7:"Underwater",8:"WB Flash",
+                 9:"One-Touch WB 1",10:"One-Touch WB 2",
+                 11:"One-Touch WB 3",12:"One-Touch WB 4",13:"Custom WB"},
+        0xD010: {0x8301:"Vivid",0x8302:"Natural",0x8303:"Muted",
+                 0x8304:"Portrait",0x8305:"Landscape",0x8306:"Flat",
+                 0x8307:"Monotone",0x8611:"e-Portrait",
+                 0x0001:"Vivid",0x0002:"Natural",0x0003:"Muted",
+                 0x0004:"Portrait",0x0005:"Landscape",0x0006:"Flat",
+                 0x0007:"Monotone"},
+        0xD08C: {1:"P",2:"A",3:"S",4:"M"},
+        0xD0AD: {1:"Off",2:"HDR1",3:"HDR2",4:"Auto HDR"},
+        0xD00D: {0x0000:"Off",0x0020:"RAW",0x0021:"RAW+Large Fine",
+                 0x0022:"RAW+Large Normal",0x0023:"RAW+Medium Fine"},
+        0xD0C7: {0x0107:"Large Fine",0x0106:"Large Normal",
+                 0x0105:"Large Basic",0x0207:"Medium Fine",
+                 0x0206:"Medium Normal",0x0307:"Small Fine",
+                 0x0306:"Small Normal",0x0305:"Small Basic",
+                 0x0128:"RAW+Large Fine",0x0120:"RAW",
+                 296:"RAW+Large Fine",288:"RAW",
+                 263:"Large Fine",262:"Large Normal",261:"Large Basic"},
+    }
+
+    def __init__(self, wpd_id):
+        from usb_camera import _bridge
+        self._bridge  = _bridge
+        self._wpd_id  = wpd_id
+        self.model    = "OM SYSTEM Camera"
+        self.firmware = "USB"
+        self._method  = "usb"
+
+    def probe(self):
+        """Return controls in same format as WiFi probe."""
+        import struct
+        r = self._bridge(["get"])
+        if not r.get("ok"):
+            raise Exception(r.get("error", "USB probe failed"))
+        oly_props = {p['pid']: p for p in r.get('props', [])
+                     if p['guid'].lower() == self.OLY_GUID.lower()}
+        controls = []
+        for wifi_name, mtp_code in self.WIFI_TO_MTP.items():
+            if mtp_code not in oly_props:
+                continue
+            prop  = oly_props[mtp_code]
+            raw   = bytes.fromhex(prop['val'])
+            val   = self._decode(mtp_code, raw)
+            label = PROP_LABELS.get(wifi_name) or self.USB_LABELS.get(mtp_code, wifi_name)
+            enums = self.USB_ENUMS.get(mtp_code, {})
+            controls.append({
+                "name":           wifi_name if wifi_name in PROP_LABELS else f"usb_{mtp_code:04X}",
+                "label":          label,
+                "access":         "getset",
+                "current_value":  val,
+                "allowed_values": list(enums.values()) if enums else [],
+                "mtp_code":       mtp_code,
+            })
+        return controls
+
+    def set_property(self, name, value_str):
+        """Set a property by WiFi name."""
+        import struct
+        if name.startswith("usb_"):
+            mtp_code = int(name[4:], 16)
+        else:
+            mtp_code = self.WIFI_TO_MTP.get(name)
+        if mtp_code is None:
+            raise ValueError(f"Unknown property: {name}")
+        raw = self._encode(mtp_code, value_str)
+        if raw is None:
+            raise ValueError(f"Cannot encode '{value_str}' for 0x{mtp_code:04X}")
+        while len(raw) < 4:
+            raw = raw + b'\x00'
+        r = self._bridge(["setprop", f"{mtp_code:04X}", raw.hex()])
+        if not r.get("ok"):
+            raise Exception(r.get("error", "Set failed"))
+        return True
+
+    def _decode(self, mtp_code, raw):
+        import struct
+        if mtp_code == 0xD01C:  # Shutter speed: bytes[0:2]=denom, bytes[2:4]=numer
+            if len(raw) >= 4:
+                denom = struct.unpack_from('<H', raw, 0)[0]
+                numer = struct.unpack_from('<H', raw, 2)[0]
+                if denom == 0:
+                    return "Bulb"
+                if numer <= 1:
+                    return f"1/{denom}"
+                # numer > 1: slow speed, display as fraction of seconds
+                # e.g. denom=10, numer=60 → 60/10 = 6 seconds
+                secs = numer / denom
+                if secs == int(secs):
+                    return f"{int(secs)}\""
+                return f"{secs:.1f}\""
+        if mtp_code in (0xD008, 0xD00F):  # milliEV
+            if len(raw) >= 2:
+                val = struct.unpack_from('<h', raw, 0)[0]
+                if val == 0:
+                    return "0.0"
+                ev = val / 1000
+                return f"{ev:+.1f}"
+        if mtp_code == 0xD002:  # Aperture x10
+            if len(raw) >= 2:
+                val = struct.unpack_from('<H', raw, 0)[0]
+                return f"f/{val/10:.1f}" if val > 0 else "f/--"
+        if mtp_code == 0xD1C0:  # ISO
+            if len(raw) >= 4:
+                val = struct.unpack_from('<I', raw, 0)[0]
+                return "Auto" if val in (0, 0xFFFFFFFF) else str(val)
+        if mtp_code in (0xD033, 0xD034):  # WB comp
+            if len(raw) >= 2:
+                val = struct.unpack_from('<h', raw, 0)[0]
+                return f"{'A' if mtp_code==0xD033 else 'G'}{val:+d}"
+        if mtp_code in self.USB_ENUMS:
+            if len(raw) >= 2:
+                val = struct.unpack_from('<H', raw, 0)[0]
+                return self.USB_ENUMS[mtp_code].get(val, str(val))
+        if len(raw) >= 2:
+            return str(struct.unpack_from('<H', raw, 0)[0])
+        return raw.hex()
+
+    def _encode(self, mtp_code, value_str):
+        import struct
+        if mtp_code == 0xD01C:
+            if '/' in value_str:
+                parts = value_str.split('/')
+                return struct.pack('<HH', int(parts[0]), int(parts[1]))
+        if mtp_code in (0xD008, 0xD00F):
+            s = value_str.replace('+','').replace(' EV','').strip()
+            return struct.pack('<h', int(float(s)*1000))
+        if mtp_code == 0xD002:
+            return struct.pack('<H', int(float(value_str.replace('f/','').strip())*10))
+        if mtp_code == 0xD1C0:
+            val = 0xFFFFFFFF if value_str == "Auto" else int(value_str)
+            return struct.pack('<I', val)
+        if mtp_code in (0xD033, 0xD034):
+            s = value_str[1:] if value_str and value_str[0] in 'AG' else value_str
+            return struct.pack('<h', int(s))
+        if mtp_code in self.USB_ENUMS:
+            rev = {v: k for k, v in self.USB_ENUMS[mtp_code].items()}
+            if value_str in rev:
+                return struct.pack('<H', rev[value_str])
+            try: return struct.pack('<H', int(value_str))
+            except ValueError: return None
+        try:
+            val = int(value_str)
+            return struct.pack('<H', val) if val < 65536 else struct.pack('<I', val)
+        except ValueError:
+            return None
+
+    def send_command(self, cmd, **kwargs):
+        raise NotImplementedError(f"WiFi command '{cmd}' not supported over USB")
+
+
 # ── CONNECTION ────────────────────────────────────────────────────────────────
 
 @app.route("/api/connect", methods=["POST"])
@@ -375,8 +593,22 @@ def api_connect():
             camera_info   = {}
 
         if method == "usb":
-            return jsonify(ok=False,
-                error="USB tethering is coming in a future release. Please use WiFi."), 200
+            if not is_usb_permitted():
+                return jsonify(ok=False, error="USB tethering requires a premium subscription"), 200
+            try:
+                from usb_camera import _bridge, find_olympus_cameras
+                # Find WPD device
+                r = _bridge(["list"])
+                if not r.get("ok") or not r.get("device"):
+                    return jsonify(ok=False, error="No camera found. Connect via USB in Raw/Control mode."), 200
+                wpd_id = r["device"]
+                # Create a USB camera proxy object
+                cam = USBCameraProxy(wpd_id)
+                camera_client = cam
+                camera_info   = {"model": cam.model, "firmware": cam.firmware, "method": "usb"}
+                return jsonify(ok=True, model=cam.model, firmware=cam.firmware)
+            except Exception as e:
+                return jsonify(ok=False, error=str(e)), 200
 
         try:
             cam = OlympusCamera()
@@ -402,7 +634,8 @@ def api_disconnect():
     with camera_lock:
         if camera_client:
             try:
-                camera_client.send_command('exec_pwoff')
+                if not isinstance(camera_client, USBCameraProxy):
+                    camera_client.send_command('exec_pwoff')
             except Exception:
                 pass
         camera_client = None
@@ -417,6 +650,18 @@ def api_probe():
         if not camera_client:
             return jsonify(ok=False, error="No camera connected"), 200
         try:
+            # USB camera probe
+            if isinstance(camera_client, USBCameraProxy):
+                controls = camera_client.probe()
+                return jsonify(
+                    ok=True,
+                    controls=controls,
+                    model=camera_info.get("model", "Unknown"),
+                    firmware=camera_info.get("firmware", ""),
+                    method="usb"
+                )
+
+            # WiFi camera probe
             camera_client.send_command('switch_cammode', mode='rec', lvqty='0320x0240')
 
             # Get full property list via desclist — single call returns everything
@@ -815,24 +1060,36 @@ def api_load_cheat():
             meta, cheat_controls = read_cheat(path)
 
             # Probe the connected camera
-            camera_client.send_command('switch_cammode', mode='rec', lvqty='0320x0240')
-            resp = camera_client.send_command('get_camprop', com='desc', propname='desclist')
-            root = ET.fromstring(resp.text)
-
-            # Build camera property map: name -> { current, access, allowed }
-            camera_props = {}
-            for desc in root.findall('desc'):
-                name      = desc.findtext('propname') or ''
-                access    = desc.findtext('attribute') or 'get'
-                current   = desc.findtext('value')
-                enum_text = desc.findtext('enum') or ''
-                allowed   = enum_text.split() if enum_text.strip() else []
-                if name:
-                    camera_props[name] = {
-                        "access":  access,
-                        "current": current,
-                        "allowed": allowed,
-                    }
+            if isinstance(camera_client, USBCameraProxy):
+                # USB camera probe
+                usb_controls = camera_client.probe()
+                camera_props = {}
+                for ctrl in usb_controls:
+                    name = ctrl.get("name")
+                    if name:
+                        camera_props[name] = {
+                            "access":  "getset",
+                            "current": ctrl.get("current_value"),
+                            "allowed": ctrl.get("allowed_values", []),
+                        }
+            else:
+                # WiFi camera probe
+                camera_client.send_command('switch_cammode', mode='rec', lvqty='0320x0240')
+                resp = camera_client.send_command('get_camprop', com='desc', propname='desclist')
+                root = ET.fromstring(resp.text)
+                camera_props = {}
+                for desc in root.findall('desc'):
+                    name      = desc.findtext('propname') or ''
+                    access    = desc.findtext('attribute') or 'get'
+                    current   = desc.findtext('value')
+                    enum_text = desc.findtext('enum') or ''
+                    allowed   = enum_text.split() if enum_text.strip() else []
+                    if name:
+                        camera_props[name] = {
+                            "access":  access,
+                            "current": current,
+                            "allowed": allowed,
+                        }
 
             # Build compatibility report
             ready       = []  # exact match available
@@ -942,20 +1199,38 @@ def api_apply_settings():
             applied = 0
             skipped = 0
             errors  = []
-            for s in settings:
-                name  = s.get("name")
-                value = s.get("value")
-                if not name or value is None:
-                    skipped += 1
-                    continue
-                try:
-                    camera_client.send_command(
-                        'set_camprop', com='set',
-                        propname=name, value=str(value))
-                    applied += 1
-                except Exception as e:
-                    errors.append(f"{name}: {e}")
-                    skipped += 1
+
+            if isinstance(camera_client, USBCameraProxy):
+                # USB camera
+                for s in settings:
+                    name  = s.get("name")
+                    value = s.get("value")
+                    if not name or value is None:
+                        skipped += 1
+                        continue
+                    try:
+                        camera_client.set_property(name, str(value))
+                        applied += 1
+                    except Exception as e:
+                        errors.append(f"{name}: {e}")
+                        skipped += 1
+            else:
+                # WiFi camera
+                for s in settings:
+                    name  = s.get("name")
+                    value = s.get("value")
+                    if not name or value is None:
+                        skipped += 1
+                        continue
+                    try:
+                        camera_client.send_command(
+                            'set_camprop', com='set',
+                            propname=name, value=str(value))
+                        applied += 1
+                    except Exception as e:
+                        errors.append(f"{name}: {e}")
+                        skipped += 1
+
             return jsonify(ok=True, applied=applied,
                            skipped=skipped, errors=errors)
         except Exception as e:
