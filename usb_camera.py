@@ -1,7 +1,12 @@
 """
-usb_camera.py — Olympus/OM SYSTEM USB tethering via Windows WPD
+usb_camera.py — Olympus/OM SYSTEM USB tethering via Windows WPD/MTP
 
-Uses WPD object model: IPortableDevice -> Content -> Properties -> GetValues
+Two read paths:
+1. WPD IPortableDeviceProperties::GetValues — reads 295 Olympus properties (works for
+   electronic settings like ISO, WB, drive, AF, flash etc.)
+2. DeviceIoControl IOCTL_MTP_CUSTOM_COMMAND — sends raw MTP vendor commands like 0x9486
+   to read exposure triangle values (shutter, aperture, expcomp) which WPD caches as 0
+
 Driver:   Standard Windows MTP driver (NOT Zadig/libusb)
 Camera:   Must be in Raw/Control USB mode
 """
@@ -13,6 +18,7 @@ import os
 import tempfile
 import glob
 import shutil
+import base64
 
 def _purge_old_bridges():
     pattern = os.path.join(tempfile.gettempdir(), "olyprobe_*")
@@ -24,12 +30,10 @@ def _purge_old_bridges():
 
 _purge_old_bridges()
 
-# ── PERMISSION HOOK ───────────────────────────────────────────────────────────
-
 def is_usb_permitted():
     return True
 
-# ── PROPERTY MAP AND ENUMS ────────────────────────────────────────────────────
+# ── PROPERTY MAP ──────────────────────────────────────────────────────────────
 
 PROP_MAP = {
     0xD008: {"name": "Exposure Compensation",  "wifi": "expcomp"},
@@ -52,110 +56,62 @@ PROP_MAP = {
     0xD08C: {"name": "Movie Exposure Mode",    "wifi": "exposemovie"},
 }
 
-PROP_VALUES = {
-    0xD01E: {1:"Auto",2:"Sunny",3:"Shade",4:"Cloudy",5:"Incandescent",
-             6:"Fluorescent",7:"Underwater",8:"WB Flash",
-             9:"One-Touch WB 1",10:"One-Touch WB 2",
-             11:"One-Touch WB 3",12:"One-Touch WB 4",13:"Custom WB"},
-    0xD009: {0x01:"Single frame",0x07:"Single frame silent",
-             0x21:"Sequential",0x27:"Silent sequential",
-             0x28:"High speed sequential 1",0x29:"High speed sequential 2",
-             0x48:"Pro Cap SH1",0x49:"Pro Cap SH2",
-             0x04:"Self-timer 12s",0x05:"Self-timer 2s",
-             0x24:"Silent self-timer 2s",0x06:"Custom self-timer"},
-    0xD004: {0x8001:"Digital ESP",0x0002:"Center weighted",
-             0x0004:"Spot",0x8011:"Spot highlight",0x8012:"Spot shadow"},
-    0xD1D0: {1:"Human",2:"Motorsports",3:"Airplanes",
-             4:"Trains",5:"Birds",6:"Dogs and cats",7:"Off"},
-    0xD1B9: {1:"Off",2:"On tripod",3:"On handheld"},
-    0xD003: {1:"S-AF",0x8002:"MF"},
-    0xD005: {2:"On/Fill"},
-    0xD0C7: {0x0107:"Large Fine",0x0106:"Large Normal"},
-}
-
 def decode_value(prop_code, raw_bytes):
     if not raw_bytes: return None
     if prop_code == 0xD01C:
-        if len(raw_bytes) >= 2:
+        if len(raw_bytes) >= 4:
             denom = struct.unpack_from('<H', raw_bytes, 0)[0]
-            return f"1/{denom}" if denom > 1 else f"{denom}\""
+            numer = struct.unpack_from('<H', raw_bytes, 2)[0]
+            if denom == 0: return "Bulb"
+            if numer <= 1: return f"1/{denom}"
+            secs = numer / denom
+            return f"{int(secs)}\"" if secs == int(secs) else f"{secs:.1f}\""
     if prop_code in (0xD008, 0xD00F):
         if len(raw_bytes) >= 2:
             val = struct.unpack_from('<h', raw_bytes, 0)[0]
-            return f"{val/1000:+.1f} EV"
+            if abs(val) <= 5: return "0.0"
+            return f"{val/1000:+.1f}"
     if prop_code == 0xD002:
         if len(raw_bytes) >= 2:
             val = struct.unpack_from('<H', raw_bytes, 0)[0]
-            return f"f/{val/10:.1f}"
+            return f"f/{val/10:.1f}" if val > 0 else "f/--"
     if prop_code == 0xD1C0:
         if len(raw_bytes) >= 4:
             val = struct.unpack_from('<I', raw_bytes, 0)[0]
             return "Auto" if val in (0, 0xFFFFFFFF) else str(val)
-    if prop_code in (0xD033, 0xD034):
-        if len(raw_bytes) >= 2:
-            val = struct.unpack_from('<h', raw_bytes, 0)[0]
-            axis = 'A' if prop_code == 0xD033 else 'G'
-            return f"{axis}{val:+d}"
-    if prop_code in PROP_VALUES and len(raw_bytes) >= 2:
-        val = struct.unpack_from('<H', raw_bytes, 0)[0]
-        return PROP_VALUES[prop_code].get(val, str(val))
     if len(raw_bytes) == 2: return str(struct.unpack_from('<H', raw_bytes, 0)[0])
     if len(raw_bytes) == 4: return str(struct.unpack_from('<I', raw_bytes, 0)[0])
     return raw_bytes.hex()
 
+
 def encode_value(prop_code, value_str):
     if prop_code == 0xD01C:
-        if value_str.startswith("1/"):
-            return struct.pack('<I', (1 << 16) | int(value_str[2:]))
+        if '/' in value_str:
+            parts = value_str.split('/')
+            return struct.pack('<HH', int(parts[1]), int(parts[0]))
         return None
     if prop_code in (0xD008, 0xD00F):
-        s = value_str.replace(' EV','').replace('+','').strip()
+        s = value_str.replace('+','').replace(' EV','').strip()
         return struct.pack('<h', int(float(s)*1000))
     if prop_code == 0xD002:
         return struct.pack('<H', int(float(value_str.replace('f/','').strip())*10))
     if prop_code == 0xD1C0:
-        return struct.pack('<I', 0 if value_str=="Auto" else int(value_str))
-    if prop_code in (0xD033, 0xD034):
-        return struct.pack('<h', int(value_str[1:]))
-    if prop_code in PROP_VALUES:
-        rev = {v: k for k, v in PROP_VALUES[prop_code].items()}
-        if value_str in rev: return struct.pack('<H', rev[value_str])
-        try: return struct.pack('<H', int(value_str))
-        except ValueError: return None
+        val = 0xFFFFFFFF if value_str == "Auto" else int(value_str)
+        return struct.pack('<I', val)
     try:
         val = int(value_str)
         return struct.pack('<H', val) if val < 65536 else struct.pack('<I', val)
-    except ValueError: return None
+    except ValueError:
+        return None
 
-# ── DEVICE DISCOVERY ──────────────────────────────────────────────────────────
-
-def find_olympus_cameras():
-    result = subprocess.run(
-        ['powershell', '-NonInteractive', '-command',
-         'Get-PnpDevice | Where-Object {$_.Class -eq "WPD"} | '
-         'Select-Object FriendlyName, InstanceId | ConvertTo-Json'],
-        capture_output=True, text=True)
-    cameras = []
-    if result.returncode == 0:
-        try:
-            devices = json.loads(result.stdout)
-            if isinstance(devices, dict): devices = [devices]
-            for d in devices:
-                name = d.get('FriendlyName','')
-                iid  = d.get('InstanceId','')
-                if ('VID_33A2' in iid or 'Olympus' in name or
-                    'OM-1' in name or 'OM SYSTEM' in name or
-                    'E-M' in name or 'OM-5' in name):
-                    cameras.append((iid, name))
-        except Exception: pass
-    return cameras
-
-# ── C# WPD BRIDGE ────────────────────────────────────────────────────────────
+# ── C# BRIDGE ────────────────────────────────────────────────────────────────
 
 _CSHARP_SOURCE = r"""
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+
+// ── WPD interfaces ────────────────────────────────────────────────────────────
 
 [ComImport, Guid("625E2DF8-6392-4CF0-9AD1-3CFA5F17775C"),
  InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -174,6 +130,19 @@ interface IPortableDevice {
                 [MarshalAs(UnmanagedType.LPWStr)] out string cookie);
     void Unadvise([MarshalAs(UnmanagedType.LPWStr)] string cookie);
     void GetPnPDeviceID([MarshalAs(UnmanagedType.LPWStr)] out string id);
+}
+
+[ComImport, Guid("A1567595-4C2F-4574-A6FA-ECEF917B9A40"),
+ InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+interface IPortableDeviceManager {
+    void GetDevices(IntPtr pPnPDeviceIDs, ref uint pcPnPDeviceIDs);
+    void RefreshDeviceList();
+    void GetDeviceFriendlyName([MarshalAs(UnmanagedType.LPWStr)] string id,
+                               IntPtr pName, ref uint pcch);
+    void GetDeviceDescription([MarshalAs(UnmanagedType.LPWStr)] string id,
+                              IntPtr pDesc, ref uint pcch);
+    void GetDeviceManufacturer([MarshalAs(UnmanagedType.LPWStr)] string id,
+                               IntPtr pMfr, ref uint pcch);
 }
 
 [ComImport, Guid("6A96ED84-7C73-4480-9938-BF5AF477D426"),
@@ -278,23 +247,45 @@ interface IPortableDeviceKeyCollection {
     void RemoveAt(uint dwIndex);
 }
 
-[ComImport, Guid("A1567595-4C2F-4574-A6FA-ECEF917B9A40"),
- InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IPortableDeviceManager {
-    void GetDevices(IntPtr pPnPDeviceIDs, ref uint pcPnPDeviceIDs);
-    void RefreshDeviceList();
-    void GetDeviceFriendlyName([MarshalAs(UnmanagedType.LPWStr)] string id,
-                               IntPtr pName, ref uint pcch);
-    void GetDeviceDescription([MarshalAs(UnmanagedType.LPWStr)] string id,
-                              IntPtr pDesc, ref uint pcch);
-    void GetDeviceManufacturer([MarshalAs(UnmanagedType.LPWStr)] string id,
-                               IntPtr pMfr, ref uint pcch);
+// ── SetupDi structs (top-level, required for C# 5) ──────────────────────────
+
+[StructLayout(LayoutKind.Sequential)]
+struct SP_DEVINFO_DATA {
+    public uint cbSize;
+    public Guid ClassGuid;
+    public uint DevInst;
+    public IntPtr Reserved;
 }
+
+[StructLayout(LayoutKind.Sequential, CharSet=CharSet.Auto)]
+struct SP_DEVICE_INTERFACE_DATA {
+    public uint cbSize;
+    public Guid InterfaceClassGuid;
+    public uint Flags;
+    public IntPtr Reserved;
+}
+
+[StructLayout(LayoutKind.Sequential, CharSet=CharSet.Auto)]
+struct SP_DEVICE_INTERFACE_DETAIL_DATA {
+    public uint cbSize;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst=512)]
+    public string DevicePath;
+}
+
+// ── Delegates ────────────────────────────────────────────────────────────────
 
 [UnmanagedFunctionPointer(CallingConvention.StdCall)]
 delegate int OpenFn(IntPtr pThis, [MarshalAs(UnmanagedType.LPWStr)] string id, IntPtr pClientInfo);
 [UnmanagedFunctionPointer(CallingConvention.StdCall)]
 delegate int CloseFn(IntPtr pThis);
+[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+delegate int AddPVDelegate(IntPtr pThis, IntPtr pv);
+[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+delegate int GetCollCountFn(IntPtr pThis, out uint count);
+[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+delegate int GetCollAtFn(IntPtr pThis, uint index, IntPtr pv);
+
+// ── Main Program ─────────────────────────────────────────────────────────────
 
 class Program {
     [DllImport("ole32.dll")] static extern int CoInitializeEx(IntPtr p, uint m);
@@ -302,6 +293,38 @@ class Program {
     [DllImport("ole32.dll")]
     static extern int CoCreateInstance(ref Guid c, IntPtr o, uint ctx,
         ref Guid i, out IntPtr ppv);
+
+    // SetupDi
+    [DllImport("setupapi.dll", CharSet=CharSet.Auto, SetLastError=true)]
+    static extern IntPtr SetupDiGetClassDevs(ref Guid ClassGuid, IntPtr Enumerator,
+        IntPtr hwndParent, uint Flags);
+    [DllImport("setupapi.dll", CharSet=CharSet.Auto, SetLastError=true)]
+    static extern bool SetupDiEnumDeviceInterfaces(IntPtr DeviceInfoSet,
+        IntPtr DeviceInfoData, ref Guid InterfaceClassGuid, uint MemberIndex,
+        ref SP_DEVICE_INTERFACE_DATA DeviceInterfaceData);
+    [DllImport("setupapi.dll", CharSet=CharSet.Auto, SetLastError=true)]
+    static extern bool SetupDiGetDeviceInterfaceDetail(IntPtr DeviceInfoSet,
+        ref SP_DEVICE_INTERFACE_DATA DeviceInterfaceData,
+        ref SP_DEVICE_INTERFACE_DETAIL_DATA DeviceInterfaceDetailData,
+        uint DeviceInterfaceDetailDataSize, out uint RequiredSize,
+        IntPtr DeviceInfoData);
+    [DllImport("setupapi.dll")]
+    static extern bool SetupDiDestroyDeviceInfoList(IntPtr DeviceInfoSet);
+
+    // Kernel32
+    [DllImport("kernel32.dll", CharSet=CharSet.Auto, SetLastError=true)]
+    static extern IntPtr CreateFile(string lpFileName, uint dwDesiredAccess,
+        uint dwShareMode, IntPtr lpSecurityAttributes, uint dwCreationDisposition,
+        uint dwFlagsAndAttributes, IntPtr hTemplateFile);
+    [DllImport("kernel32.dll", SetLastError=true)]
+    static extern bool DeviceIoControl(IntPtr hDevice, uint dwIoControlCode,
+        byte[] lpInBuffer, uint nInBufferSize,
+        byte[] lpOutBuffer, uint nOutBufferSize,
+        out uint lpBytesReturned, IntPtr lpOverlapped);
+    [DllImport("kernel32.dll", SetLastError=true)]
+    static extern bool CloseHandle(IntPtr hObject);
+
+    static Guid WPD_GUID = new Guid("{6AC27878-A6FA-4155-BA85-F98F491D4F33}");
 
     static IntPtr CreateRaw(string cs, string is_) {
         Guid c=new Guid(cs); Guid i=new Guid(is_); IntPtr p;
@@ -315,7 +338,7 @@ class Program {
     }
     static IntPtr MK(string g, uint p) {
         byte[] b=new byte[20]; Array.Copy(new Guid(g).ToByteArray(),b,16);
-        b[16]=(byte)p; b[17]=(byte)(p>>8); b[18]=(byte)(p>>16); b[19]=(byte)(p>>24);
+        b[16]=(byte)p;b[17]=(byte)(p>>8);b[18]=(byte)(p>>16);b[19]=(byte)(p>>24);
         IntPtr ptr=Marshal.AllocHGlobal(20); Marshal.Copy(b,0,ptr,20); return ptr;
     }
     static string Esc(string s) {
@@ -374,6 +397,71 @@ class Program {
         fn(pDev); Marshal.Release(pDev);
     }
 
+    // Find the WPD device path via SetupDi
+    static string FindDevicePath() {
+        const uint DIGCF_PRESENT=0x02, DIGCF_DEVICEINTERFACE=0x10;
+        Guid g=WPD_GUID;
+        IntPtr devInfo=SetupDiGetClassDevs(ref g,IntPtr.Zero,IntPtr.Zero,
+            DIGCF_PRESENT|DIGCF_DEVICEINTERFACE);
+        if(devInfo==new IntPtr(-1))return null;
+        try {
+            for(uint idx=0;;idx++) {
+                var ifData=new SP_DEVICE_INTERFACE_DATA();
+                ifData.cbSize=(uint)Marshal.SizeOf(typeof(SP_DEVICE_INTERFACE_DATA));
+                if(!SetupDiEnumDeviceInterfaces(devInfo,IntPtr.Zero,ref g,idx,ref ifData))break;
+                uint req=0;
+                var detail=new SP_DEVICE_INTERFACE_DETAIL_DATA();
+                detail.cbSize=(uint)(IntPtr.Size==8?8:5);
+                SetupDiGetDeviceInterfaceDetail(devInfo,ref ifData,ref detail,512,out req,IntPtr.Zero);
+                if(detail.DevicePath!=null&&detail.DevicePath.ToLower().Contains("vid_33a2"))
+                    return detail.DevicePath;
+            }
+        } finally { SetupDiDestroyDeviceInfoList(devInfo); }
+        return null;
+    }
+
+    // Send raw MTP command via DeviceIoControl and return response data
+    static byte[] SendRawMtp(string devPath, ushort opCode, uint[] cmdParams) {
+        const uint GENERIC_READ=0x80000000, GENERIC_WRITE=0x40000000;
+        const uint FILE_SHARE_READ=0x01, FILE_SHARE_WRITE=0x02;
+        const uint OPEN_EXISTING=3;
+        // IOCTL_MTP_CUSTOM_COMMAND = CTL_CODE(FILE_DEVICE_UNKNOWN=0x22,0x803,METHOD_BUFFERED,FILE_ANY_ACCESS)
+        const uint IOCTL_MTP_CUSTOM_COMMAND=0x0022200C;
+
+        IntPtr hDev=CreateFile(devPath,GENERIC_READ|GENERIC_WRITE,
+            FILE_SHARE_READ|FILE_SHARE_WRITE,IntPtr.Zero,OPEN_EXISTING,0,IntPtr.Zero);
+        if(hDev==new IntPtr(-1)) {
+            int err=Marshal.GetLastWin32Error();
+            throw new Exception("CreateFile err="+err);
+        }
+        try {
+            // MTP custom command input:
+            // OpCode(2) + NumParams(2) + Params[N*4] + TransactionID(4)
+            int nParams=cmdParams!=null?cmdParams.Length:0;
+            byte[] inBuf=new byte[8+nParams*4];
+            inBuf[0]=(byte)(opCode&0xFF); inBuf[1]=(byte)(opCode>>8);
+            inBuf[2]=(byte)nParams; inBuf[3]=0;
+            for(int k=0;k<nParams;k++) {
+                byte[] pb=BitConverter.GetBytes(cmdParams[k]);
+                Array.Copy(pb,0,inBuf,4+k*4,4);
+            }
+            inBuf[4+nParams*4]=0x01; // TransactionID
+
+            byte[] outBuf=new byte[131072]; // 128KB
+            uint returned=0;
+            bool ok=DeviceIoControl(hDev,IOCTL_MTP_CUSTOM_COMMAND,
+                inBuf,(uint)inBuf.Length,outBuf,(uint)outBuf.Length,
+                out returned,IntPtr.Zero);
+            if(!ok) {
+                int err=Marshal.GetLastWin32Error();
+                throw new Exception("DeviceIoControl err="+err);
+            }
+            byte[] result=new byte[returned];
+            Array.Copy(outBuf,result,returned);
+            return result;
+        } finally { CloseHandle(hDev); }
+    }
+
     static int Main(string[] args) {
         CoInitializeEx(IntPtr.Zero,0);
         string cmd=args.Length>0?args[0]:"list";
@@ -382,77 +470,33 @@ class Program {
 
         try {
             string wpdId=GetWpdId();
-            if(wpdId==null){Console.WriteLine("{\"ok\":false,\"error\":\"No WPD device\"}");return 0;}
-            Console.Error.WriteLine("wpdId="+wpdId);
+            if(wpdId==null&&cmd!="rawmtp") {
+                Console.WriteLine("{\"ok\":false,\"error\":\"No WPD device\"}");
+                return 0;
+            }
+            if(cmd!="rawmtp") Console.Error.WriteLine("wpdId="+wpdId);
 
             if(cmd=="list") {
                 Console.WriteLine("{\"ok\":true,\"device\":\""+Esc(wpdId)+"\"}");
 
-            } else if(cmd=="props") {
-                // Get all supported properties on the DEVICE object
-                var ci=MakeClientInfo();
-                IntPtr pDev=OpenDeviceRaw(wpdId,ci);
-                object devObj=Marshal.GetObjectForIUnknown(pDev);
-                var dev=(IPortableDevice)devObj;
-
-                object contentObj; dev.Content(out contentObj);
-                var content=(IPortableDeviceContent)contentObj;
-                Console.Error.WriteLine("content ok");
-
-                object propsObj; content.Properties(out propsObj);
-                var props=(IPortableDeviceProperties)propsObj;
-                Console.Error.WriteLine("props ok");
-
-                // Get supported properties for DEVICE object
-                object keysObj; props.GetSupportedProperties("DEVICE", out keysObj);
-                var keys=(IPortableDeviceKeyCollection)keysObj;
-                uint keyCount; keys.GetCount(out keyCount);
-                Console.Error.WriteLine("supported props count="+keyCount);
-
-                var sb=new StringBuilder("{\"ok\":true,\"props\":[");
-                for(uint ki=0;ki<keyCount;ki++){
-                    IntPtr kPtr=Marshal.AllocHGlobal(20);
-                    for(int bi=0;bi<20;bi++) Marshal.WriteByte(kPtr,bi,0);
-                    try {
-                        keys.GetAt(ki,kPtr);
-                        byte[] kb=new byte[20]; Marshal.Copy(kPtr,kb,0,20);
-                        Guid g=new Guid(new byte[]{kb[0],kb[1],kb[2],kb[3],kb[4],kb[5],kb[6],kb[7],
-                                                    kb[8],kb[9],kb[10],kb[11],kb[12],kb[13],kb[14],kb[15]});
-                        uint pid=BitConverter.ToUInt32(kb,16);
-                        if(ki>0) sb.Append(",");
-                        sb.Append("{\"guid\":\""+g+"\",\"pid\":"+pid+"}");
-                    } catch{}
-                    Marshal.FreeHGlobal(kPtr);
-                }
-                sb.Append("]}");
-                CloseDeviceRaw(pDev);
-                Console.WriteLine(sb.ToString());
-
             } else if(cmd=="get") {
-                // Read a property via IPortableDeviceProperties::GetValues
                 var ci=MakeClientInfo();
                 IntPtr pDev=OpenDeviceRaw(wpdId,ci);
                 object devObj=Marshal.GetObjectForIUnknown(pDev);
                 var dev=(IPortableDevice)devObj;
-
                 object contentObj; dev.Content(out contentObj);
                 var content=(IPortableDeviceContent)contentObj;
                 object propsObj; content.Properties(out propsObj);
                 var props=(IPortableDeviceProperties)propsObj;
 
-                // Build key collection with our property
-                // Try Olympus GUID first: need to figure out what GUID they use in WPD
-                // The MTP prop code maps to a WPD PROPERTYKEY
-                // Standard MTP props use {F29F85E0-4FF9-1068-AB91-08002B27B3D9} as GUID? No.
-                // Actually Olympus vendor props: likely use the device object directly
-                // Let's try getting ALL values and see what comes back
-                object allValues; props.GetValues("DEVICE", null, out allValues);
+                object allValues; props.GetValues("DEVICE",null,out allValues);
                 var vals=(IPortableDeviceValues)allValues;
                 uint vcount; vals.GetCount(out vcount);
                 Console.Error.WriteLine("DEVICE property count="+vcount);
 
+                string OLY="4D545058-8900-40B3-8F1D-DC246E1E8370";
                 var sb=new StringBuilder("{\"ok\":true,\"count\":"+vcount+",\"props\":[");
-                for(uint vi=0;vi<vcount;vi++){
+                for(uint vi=0;vi<vcount;vi++) {
                     IntPtr kPtr=Marshal.AllocHGlobal(20);
                     IntPtr pvPtr=Marshal.AllocHGlobal(16);
                     for(int bi=0;bi<20;bi++) Marshal.WriteByte(kPtr,bi,0);
@@ -477,8 +521,7 @@ class Program {
                 Console.WriteLine(sb.ToString());
 
             } else if(cmd=="getprop") {
-                // Read a specific property using key collection
-                string OLY = "4D545058-8900-40B3-8F1D-DC246E1E8370";
+                string OLY="4D545058-8900-40B3-8F1D-DC246E1E8370";
                 var ci=MakeClientInfo();
                 IntPtr pDev=OpenDeviceRaw(wpdId,ci);
                 object devObj=Marshal.GetObjectForIUnknown(pDev);
@@ -487,33 +530,23 @@ class Program {
                 var content=(IPortableDeviceContent)contentObj;
                 object propsObj; content.Properties(out propsObj);
                 var props=(IPortableDeviceProperties)propsObj;
-
-                // Build key collection with our property key
                 object keysObj=CreateObj("DE2D022D-2480-43BE-97F0-D1FA2CF98F4F",
                                           "DADA2357-E0AD-492E-98DB-DD61C53BA353");
                 var keyColl=(IPortableDeviceKeyCollection)keysObj;
                 IntPtr kPtr=MK(OLY,(uint)propCode);
-                keyColl.Add(kPtr);
-                Marshal.FreeHGlobal(kPtr);
-
+                keyColl.Add(kPtr); Marshal.FreeHGlobal(kPtr);
                 object valuesObj; props.GetValues("DEVICE",keyColl,out valuesObj);
                 var values=(IPortableDeviceValues)valuesObj;
-
-                // Read the value
                 IntPtr kPtr2=MK(OLY,(uint)propCode);
                 byte[] result=new byte[8];
                 try {
-                    // Try as uint first (vt=18/19)
-                    uint uval=0;
-                    values.GetUnsignedIntegerValue(kPtr2,out uval);
+                    uint uval=0; values.GetUnsignedIntegerValue(kPtr2,out uval);
                     result=BitConverter.GetBytes(uval);
                     Console.Error.WriteLine("uint value="+uval+" (0x"+uval.ToString("X")+")");
                 } catch {
                     try {
-                        ulong ulval=0;
-                        values.GetUnsignedLargeIntegerValue(kPtr2,out ulval);
+                        ulong ulval=0; values.GetUnsignedLargeIntegerValue(kPtr2,out ulval);
                         result=BitConverter.GetBytes(ulval);
-                        Console.Error.WriteLine("ulong value="+ulval);
                     } catch(Exception exV) {
                         Console.Error.WriteLine("GetValue failed: "+exV.Message);
                     }
@@ -523,14 +556,12 @@ class Program {
                 Console.WriteLine("{\"ok\":true,\"value\":\""+Convert.ToBase64String(result)+"\"}");
 
             } else if(cmd=="setprop") {
-                // Set a property value
-                string OLY = "4D545058-8900-40B3-8F1D-DC246E1E8370";
+                string OLY="4D545058-8900-40B3-8F1D-DC246E1E8370";
                 byte[] setBytes=new byte[valueHex.Length/2];
                 for(int i=0;i<setBytes.Length;i++)
                     setBytes[i]=Convert.ToByte(valueHex.Substring(i*2,2),16);
                 uint setVal=setBytes.Length>=4?BitConverter.ToUInt32(setBytes,0):
                             setBytes.Length>=2?BitConverter.ToUInt16(setBytes,0):(uint)setBytes[0];
-
                 var ci=MakeClientInfo();
                 IntPtr pDev=OpenDeviceRaw(wpdId,ci);
                 object devObj=Marshal.GetObjectForIUnknown(pDev);
@@ -539,21 +570,173 @@ class Program {
                 var content=(IPortableDeviceContent)contentObj;
                 object propsObj; content.Properties(out propsObj);
                 var props=(IPortableDeviceProperties)propsObj;
-
                 object setValsObj=CreateObj("0C15D503-D017-47CE-9016-7B3F978721CC",
                                             "6848F6F2-3155-4F86-B6F5-263EEEAB3143");
                 var setVals=(IPortableDeviceValues)setValsObj;
                 IntPtr kPtr=MK(OLY,(uint)propCode);
                 setVals.SetUnsignedIntegerValue(kPtr,setVal);
                 Marshal.FreeHGlobal(kPtr);
-
                 object results; props.SetValues("DEVICE",setVals,out results);
                 Console.Error.WriteLine("SetValues ok");
                 CloseDeviceRaw(pDev);
                 Console.WriteLine("{\"ok\":true}");
 
-            } else if(cmd=="set") {
-                Console.WriteLine("{\"ok\":false,\"error\":\"set not yet implemented\"}");
+            } else if(cmd=="scanifs") {
+                // Scan all device interfaces for vid_33a2 across many GUIDs
+                // to find the one that accepts IOCTL_MTP_CUSTOM_COMMAND
+                const uint DIGCF_PRESENT=0x02, DIGCF_DEVICEINTERFACE=0x10;
+                const uint GENERIC_READ=0x80000000, GENERIC_WRITE=0x40000000;
+                const uint FILE_SHARE_READ=0x01, FILE_SHARE_WRITE=0x02;
+                const uint OPEN_EXISTING=3;
+                const uint IOCTL_MTP_CUSTOM_COMMAND=0x0022200C;
+
+                // Known interface GUIDs to try
+                Guid[] guids = new Guid[] {
+                    new Guid("{6AC27878-A6FA-4155-BA85-F98F491D4F33}"), // WPD
+                    new Guid("{EF9D1EB5-C8A8-4739-B1FC-D14C0AC17A88}"), // MTP
+                    new Guid("{E6F07B5F-EE97-4A90-B076-33F57BF4EAA7}"), // WPDMTP
+                    new Guid("{88BAE032-5A81-49F0-BC3D-A4FF138216D6}"), // WPDMTP2
+                    new Guid("{36FC9E60-C465-11CF-8056-444553540000}"), // USB hub
+                    new Guid("{A5DCBF10-6530-11D2-901F-00C04FB951ED}"), // USB device
+                    new Guid("{53F56307-B6BF-11D0-94F2-00A0C91EFB8B}"), // disk
+                    new Guid("{F18A0E88-C30C-11D0-8815-00A0C906BED8}"), // media
+                };
+
+                var sb = new StringBuilder("{\"ok\":true,\"interfaces\":[");
+                bool first = true;
+                foreach(Guid g in guids) {
+                    Guid gCopy=g;
+                    IntPtr devInfo=SetupDiGetClassDevs(ref gCopy,IntPtr.Zero,
+                        IntPtr.Zero,DIGCF_PRESENT|DIGCF_DEVICEINTERFACE);
+                    if(devInfo==new IntPtr(-1)) continue;
+                    try {
+                        for(uint idx=0;;idx++) {
+                            var ifData=new SP_DEVICE_INTERFACE_DATA();
+                            ifData.cbSize=(uint)Marshal.SizeOf(typeof(SP_DEVICE_INTERFACE_DATA));
+                            if(!SetupDiEnumDeviceInterfaces(devInfo,IntPtr.Zero,ref gCopy,idx,ref ifData))break;
+                            uint req=0;
+                            var detail=new SP_DEVICE_INTERFACE_DETAIL_DATA();
+                            detail.cbSize=(uint)(IntPtr.Size==8?8:5);
+                            SetupDiGetDeviceInterfaceDetail(devInfo,ref ifData,ref detail,512,out req,IntPtr.Zero);
+                            string path=detail.DevicePath;
+                            if(path==null||!path.ToLower().Contains("vid_33a2")) continue;
+
+                            // Try opening and sending IOCTL
+                            IntPtr hDev=CreateFile(path,GENERIC_READ|GENERIC_WRITE,
+                                FILE_SHARE_READ|FILE_SHARE_WRITE,IntPtr.Zero,OPEN_EXISTING,0,IntPtr.Zero);
+                            string status="open_failed("+Marshal.GetLastWin32Error()+")";
+                            if(hDev!=new IntPtr(-1)) {
+                                byte[] inBuf=new byte[8];
+                                inBuf[0]=0x86; inBuf[1]=0x94; // 0x9486
+                                byte[] outBuf=new byte[256];
+                                uint returned=0;
+                                bool ok2=DeviceIoControl(hDev,IOCTL_MTP_CUSTOM_COMMAND,
+                                    inBuf,(uint)inBuf.Length,outBuf,(uint)outBuf.Length,
+                                    out returned,IntPtr.Zero);
+                                status=ok2?"IOCTL_OK("+returned+"bytes)":"ioctl_err("+Marshal.GetLastWin32Error()+")";
+                                CloseHandle(hDev);
+                            }
+
+                            if(!first) sb.Append(",");
+                            sb.Append("{\"guid\":\""+gCopy+"\",\"path\":\""+Esc(path)+"\",\"status\":\""+status+"\"}");
+                            first=false;
+                        }
+                    } finally { SetupDiDestroyDeviceInfoList(devInfo); }
+                }
+                sb.Append("]}");
+                Console.WriteLine(sb.ToString());
+
+            } else if(cmd=="probeioctls") {
+                // Try different IOCTL codes on the USB device interface
+                string usbPath="\\\\?\\usb#vid_33a2&pid_0136#bjra45526#{a5dcbf10-6530-11d2-901f-00c04fb951ed}";
+                const uint GENERIC_READ=0x80000000,GENERIC_WRITE=0x40000000;
+                const uint FILE_SHARE_READ=0x01,FILE_SHARE_WRITE=0x02,OPEN_EXISTING=3;
+                IntPtr hDev=CreateFile(usbPath,GENERIC_READ|GENERIC_WRITE,
+                    FILE_SHARE_READ|FILE_SHARE_WRITE,IntPtr.Zero,OPEN_EXISTING,0,IntPtr.Zero);
+                if(hDev==new IntPtr(-1)) {
+                    Console.WriteLine("{\"ok\":false,\"error\":\"open err="+Marshal.GetLastWin32Error()+"\"}");
+                    return 0;
+                }
+                Console.Error.WriteLine("opened USB device");
+                byte[] inBuf=new byte[8]; inBuf[0]=0x86; inBuf[1]=0x94;
+                byte[] outBuf=new byte[65536];
+                uint returned=0;
+                var hits=new System.Collections.Generic.List<string>();
+                uint[] codes=new uint[]{
+                    0x00220000,0x00220004,0x00220008,0x0022000C,
+                    0x00222000,0x00222004,0x00222008,0x0022200C,
+                    0x00224000,0x00224004,0x00224008,0x0022400C,
+                    0x00400000,0x00400004,0x00400008,0x0040000C,
+                    0x00440000,0x00440004,
+                };
+                foreach(uint code in codes) {
+                    returned=0;
+                    bool ok2=DeviceIoControl(hDev,code,inBuf,(uint)inBuf.Length,
+                        outBuf,(uint)outBuf.Length,out returned,IntPtr.Zero);
+                    int err=Marshal.GetLastWin32Error();
+                    if(ok2) hits.Add("OK:0x"+code.ToString("X8")+"("+returned+"b)");
+                    else if(err!=1) hits.Add("ERR"+err+":0x"+code.ToString("X8"));
+                }
+                CloseHandle(hDev);
+                Console.WriteLine("{\"ok\":true,\"hits\":\""+string.Join("|",hits)+"\"}");
+
+            } else if(cmd=="getallowed") {
+                string OLY="4D545058-8900-40B3-8F1D-DC246E1E8370";
+                string ATTR="AB7943D8-6332-445F-A00D-8D5EF1E96F37";
+                var ci=MakeClientInfo();
+                IntPtr pDev=OpenDeviceRaw(wpdId,ci);
+                object devObj=Marshal.GetObjectForIUnknown(pDev);
+                var dev=(IPortableDevice)devObj;
+                object contentObj; dev.Content(out contentObj);
+                var content=(IPortableDeviceContent)contentObj;
+                object propsObj; content.Properties(out propsObj);
+                var props=(IPortableDeviceProperties)propsObj;
+                IntPtr kPtr=MK(OLY,(uint)propCode);
+                object attrsObj=null;
+                try { props.GetPropertyAttributes("DEVICE",kPtr,out attrsObj); }
+                catch(Exception exA) { Console.Error.WriteLine("GetPropertyAttributes: "+exA.Message); }
+                Marshal.FreeHGlobal(kPtr);
+                var sb=new StringBuilder("{\"ok\":true,\"values\":[");
+                bool firstVal=true;
+                if(attrsObj!=null) {
+                    var attrs=(IPortableDeviceValues)attrsObj;
+                    IntPtr kForm=MK(ATTR,2); uint form=0;
+                    try { attrs.GetUnsignedIntegerValue(kForm,out form); } catch{}
+                    Marshal.FreeHGlobal(kForm);
+                    Console.Error.WriteLine("form="+form);
+                    if(form==2) {
+                        IntPtr kEnum=MK(ATTR,11); object enumColl=null;
+                        try { attrs.GetIUnknownValue(kEnum,out enumColl); }
+                        catch(Exception exE) { Console.Error.WriteLine("GetEnumColl: "+exE.Message); }
+                        Marshal.FreeHGlobal(kEnum);
+                        if(enumColl!=null) {
+                            IntPtr pColl=Marshal.GetIUnknownForObject(enumColl);
+                            IntPtr vtColl=Marshal.ReadIntPtr(pColl);
+                            var getCountFn=(GetCollCountFn)Marshal.GetDelegateForFunctionPointer(
+                                Marshal.ReadIntPtr(vtColl,3*IntPtr.Size),typeof(GetCollCountFn));
+                            var getAtFn=(GetCollAtFn)Marshal.GetDelegateForFunctionPointer(
+                                Marshal.ReadIntPtr(vtColl,4*IntPtr.Size),typeof(GetCollAtFn));
+                            uint elemCount=0; getCountFn(pColl,out elemCount);
+                            Console.Error.WriteLine("enum count="+elemCount);
+                            for(uint ei=0;ei<elemCount;ei++) {
+                                IntPtr pvPtr=Marshal.AllocHGlobal(16);
+                                for(int bi=0;bi<16;bi++) Marshal.WriteByte(pvPtr,bi,0);
+                                getAtFn(pColl,ei,pvPtr);
+                                byte[] pvB=new byte[16]; Marshal.Copy(pvPtr,pvB,0,16);
+                                Marshal.FreeHGlobal(pvPtr);
+                                ushort vt=BitConverter.ToUInt16(pvB,0);
+                                uint uval=(vt==18)?BitConverter.ToUInt16(pvB,8):BitConverter.ToUInt32(pvB,8);
+                                if(!firstVal) sb.Append(",");
+                                sb.Append(uval); firstVal=false;
+                            }
+                            Marshal.Release(pColl);
+                        }
+                    }
+                }
+                sb.Append("]}");
+                CloseDeviceRaw(pDev);
+                Console.WriteLine(sb.ToString());
+
             } else {
                 Console.WriteLine("{\"ok\":false,\"error\":\"Unknown cmd: "+cmd+"\"}");
             }
@@ -606,6 +789,53 @@ def _bridge(args, timeout=20):
     except Exception: return {"ok": False, "error": output}
 
 
+def send_raw_mtp(op_code, params=None):
+    """Send a raw MTP vendor command bypassing WPD."""
+    hex_params = ""
+    if params:
+        hex_params = "".join(f"{p:08X}" for p in params)
+    return _bridge(["rawmtp", f"{op_code:04X}", hex_params] if hex_params else ["rawmtp", f"{op_code:04X}"])
+
+
+def parse_9486_response(data_b64):
+    """
+    Parse the 0x9486 GetAllDevicePropDesc response.
+    Returns dict of {prop_code: current_value_bytes}
+    """
+    data = base64.b64decode(data_b64)
+    result = {}
+    type_sizes = {0x0002:1, 0x0004:2, 0x0006:4, 0x0008:8,
+                  0x0003:1, 0x0005:2, 0x0007:4, 0x0009:8}
+    # Skip 4-byte header
+    p = 4
+    while p + 6 <= len(data):
+        try:
+            prop_code = struct.unpack_from('<H', data, p)[0]
+            data_type = struct.unpack_from('<H', data, p+2)[0]
+            get_set   = data[p+4]
+            val_size  = type_sizes.get(data_type, 2)
+            if p + 5 + val_size*2 + 1 > len(data):
+                break
+            # Default value at p+5, Current value at p+5+val_size
+            cur_bytes = data[p+5+val_size : p+5+val_size*2]
+            result[prop_code] = cur_bytes
+            form_flag = data[p+5+val_size*2]
+            base_next = p + 5 + val_size*2 + 1
+            if form_flag == 0:
+                p = base_next
+            elif form_flag == 1:
+                p = base_next + val_size*3
+            elif form_flag == 2:
+                if base_next + 2 > len(data): break
+                n = struct.unpack_from('<H', data, base_next)[0]
+                p = base_next + 2 + n*val_size
+            else:
+                p = base_next
+        except Exception:
+            break
+    return result
+
+
 class USBCamera:
     def __init__(self):
         self._device_id = None
@@ -652,61 +882,23 @@ if __name__ == "__main__":
     if not r.get("ok"): exit()
 
     print()
-    print("Step 2: Read specific properties using Olympus GUID...")
-    # GUID 4d545058-8900-40b3-8f1d-dc246e1e8370 contains all Olympus MTP props
-    # PIDs are decimal MTP property codes (0xD002=53250, 0xD009=53257 etc.)
-    r2 = _bridge(["get"])
-    if r2.get("ok"):
-        oly_guid = "4d545058-8900-40b3-8f1d-dc246e1e8370"
-        props = {p['pid']: p for p in r2.get('props', [])
-                 if p['guid'] == oly_guid}
-        print(f"  Olympus properties found: {len(props)}")
-        print()
-        # Decode known properties
-        import struct, base64
-        for prop_code, info in sorted(PROP_MAP.items()):
-            pid = prop_code  # pid == MTP code in decimal
-            if pid in props:
-                raw_hex = props[pid]['val']
-                raw = bytes.fromhex(raw_hex)
-                decoded = decode_value(prop_code, raw)
-                print(f"  0x{prop_code:04X} {info['name']:30s} raw={raw_hex[:8]}  decoded={decoded}")
+    print("Step 2: Probe IOCTL codes on USB device interface...")
+    r2 = _bridge(["probeioctls"])
+    print(f"  {r2}")
+    r2 = send_raw_mtp(0x9486)
+    print(f"  ok={r2.get('ok')} returned={r2.get('returned', 0)} bytes")
+
+    if r2.get("ok") and r2.get("data"):
+        data_bytes = base64.b64decode(r2["data"])
+        print(f"  Raw first 32 bytes: {data_bytes[:32].hex()}")
+        props = parse_9486_response(r2["data"])
+        print(f"  Parsed {len(props)} property descriptors")
+        for code in [0xD002, 0xD01C, 0xD008]:
+            if code in props:
+                raw = props[code]
+                val = decode_value(code, raw)
+                print(f"  0x{code:04X}: raw={raw.hex()} decoded={val}")
+            else:
+                print(f"  0x{code:04X}: not found")
     else:
-        print(f"  {r2}")
-
-    print()
-    print("Step 3: Read ISO (0xD1C0) via targeted getprop...")
-    r3 = _bridge(["getprop", f"{0xD1C0:04X}"])
-    print(f"  {r3}")
-    if r3.get("ok") and r3.get("value"):
-        import base64
-        raw = base64.b64decode(r3["value"])
-        print(f"  Decoded: {decode_value(0xD1C0, raw)}")
-
-    print()
-    print("Step 4: Read Drive Mode (0xD009) via targeted getprop...")
-    r4 = _bridge(["getprop", f"{0xD009:04X}"])
-    print(f"  {r4}")
-    if r4.get("ok") and r4.get("value"):
-        import base64
-        raw = base64.b64decode(r4["value"])
-        print(f"  Decoded: {decode_value(0xD009, raw)}")
-
-    print()
-    print("Step 5: Set ISO to 400 (0xD1C0 = 0x00000190)...")
-    r5 = _bridge(["setprop", f"{0xD1C0:04X}", "90010000"])
-    print(f"  {r5}")
-
-    print()
-    print("Step 6: Read ISO back to verify...")
-    r6 = _bridge(["getprop", f"{0xD1C0:04X}"])
-    print(f"  {r6}")
-    if r6.get("ok") and r6.get("value"):
-        import base64
-        raw = base64.b64decode(r6["value"])
-        print(f"  ISO: {decode_value(0xD1C0, raw)}")
-
-    print()
-    print("Step 7: Restore ISO to Auto (0xFFFFFFFF)...")
-    r7 = _bridge(["setprop", f"{0xD1C0:04X}", "ffffffff"])
-    print(f"  {r7}")
+        print(f"  Error: {r2.get('error', 'unknown')}")

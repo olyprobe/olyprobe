@@ -145,6 +145,74 @@
     border: 1px solid var(--rule);
   }
   .btn-connect.disconnect:hover { color: var(--status-err); border-color: #c87070; }
+  .btn-help {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid var(--rule); background: var(--paper-2);
+    color: var(--ink-3); font-size: 14px; font-weight: 700;
+    cursor: pointer; line-height: 26px; flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-help:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── HELP MODAL ── */
+  .help-overlay {
+    position: fixed; inset: 0; background: rgba(26,26,24,0.6);
+    display: flex; align-items: flex-start; justify-content: center;
+    z-index: 300; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s; padding: 24px 16px; overflow-y: auto;
+  }
+  .help-overlay.open { opacity: 1; pointer-events: all; }
+  .help-panel {
+    background: var(--paper); border-radius: 8px;
+    border: 1px solid var(--rule); width: 100%; max-width: 920px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column; overflow: hidden;
+    min-height: 600px; max-height: calc(100vh - 48px);
+  }
+  .help-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 24px; border-bottom: 1px solid var(--rule);
+    background: var(--paper-2); flex-shrink: 0;
+  }
+  .help-header-title { font-family: var(--serif); font-size: 18px; color: var(--ink); }
+  .help-body { display: flex; flex: 1; overflow: hidden; }
+  .help-nav {
+    width: 210px; flex-shrink: 0; border-right: 1px solid var(--rule);
+    overflow-y: auto; background: var(--paper-2); padding: 8px 0;
+  }
+  .help-nav-section { }
+  .help-nav-group-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-3);
+    padding: 10px 14px 4px 14px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    user-select: none;
+  }
+  .help-nav-group-title:hover { color: var(--ink); }
+  .help-nav-group-title .chev { font-style:normal; transition: transform 0.15s; display:inline-block; }
+  .help-nav-section.collapsed .chev { transform: rotate(-90deg); }
+  .help-nav-section.collapsed .help-nav-items { display: none; }
+  .help-nav-items { list-style: none; margin: 0; padding: 0 0 4px 0; }
+  .help-nav-item {
+    padding: 5px 14px 5px 22px; font-size: 12.5px; color: var(--ink-2);
+    cursor: pointer; border-left: 2px solid transparent; margin-left: 0;
+    transition: background 0.1s, color 0.1s;
+  }
+  .help-nav-item:hover { background: var(--paper); color: var(--ink); }
+  .help-nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--paper); font-weight: 500; }
+  .help-content {
+    flex: 1; overflow-y: auto; padding: 28px 32px;
+    font-size: 13.5px; line-height: 1.75; color: var(--ink-2);
+  }
+  .help-content h2 { font-family: var(--serif); font-size: 22px; color: var(--ink); margin: 0 0 4px; font-weight: 400; }
+  .help-content .help-lead { font-size: 14px; color: var(--ink-3); margin: 0 0 20px; border-bottom: 1px solid var(--rule); padding-bottom: 14px; }
+  .help-content h3 { font-family: var(--serif); font-size: 15px; color: var(--ink); margin: 22px 0 6px; font-weight: 400; }
+  .help-content p { margin: 0 0 10px; }
+  .help-content ul { margin: 0 0 10px; padding-left: 18px; }
+  .help-content li { margin-bottom: 5px; }
+  .help-content strong { color: var(--ink); }
+  .help-note { background: var(--paper-2); border-left: 3px solid var(--accent-mid); padding: 10px 14px; border-radius: 0 4px 4px 0; margin: 14px 0; font-size: 13px; }
+  .help-tip  { background: #f0f7f0; border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 0 4px 4px 0; margin: 14px 0; font-size: 13px; }
 
   /* ── MAIN ── */
   .app-main {
@@ -488,11 +556,14 @@
     padding: 8px 14px;
   }
   .value-chip {
+    cursor: default;
     font-size: 10px; padding: 2px 7px; border-radius: 10px;
     background: var(--paper-2); color: var(--ink-3);
     border: 1px solid var(--rule);
     font-family: var(--mono);
   }
+  .editable-chip { cursor: pointer; }
+  .editable-chip:hover { background: var(--accent-light); border-color: var(--accent-mid); color: var(--accent); }
   .value-chip.current-value {
     background: var(--accent-light); color: var(--accent);
     border-color: var(--accent-mid); font-weight: 500;
@@ -526,6 +597,18 @@
     display: flex; justify-content: space-between; align-items: flex-start;
     padding: 20px 24px; border-bottom: 1px solid var(--rule);
     background: var(--paper-2);
+  }
+
+  /* Probe overlay gets a distinct teal header to distinguish from View */
+  #probe-overlay .view-overlay-header {
+    background: #e8f4f2;
+    border-bottom-color: #b2d8d2;
+  }
+  #probe-overlay .view-overlay-title {
+    color: #1a5c54;
+  }
+  #probe-overlay .view-overlay-close {
+    color: #1a5c54;
   }
   .view-overlay-title {
     font-family: var(--serif); font-size: 22px;
@@ -908,6 +991,7 @@
     </div>
 
     <button class="btn-connect" id="btn-connect" onclick="toggleConnect()">Connect</button>
+    <button class="btn-help" onclick="openHelp()" title="Help">?</button>
   </div>
 </header>
 
@@ -954,7 +1038,7 @@
   <!-- VIEW 2: CHEAT DETAIL / APPLY -->
   <div class="view" id="view-detail">
     <div class="view-nav">
-      <button class="btn-back" onclick="showView('library')">← Library</button>
+      <button class="btn-back" onclick="showView('library')">← Home</button>
       <span class="view-nav-sep">/</span>
       <span class="view-nav-title" id="detail-nav-title">Cheat detail</span>
     </div>
@@ -983,83 +1067,120 @@
   </div>
 
   <!-- VIEW 3: PROBE / CREATE -->
-  <div class="view" id="view-probe">
-    <div class="view-nav">
-      <button class="btn-back" onclick="showView('library')">← Library</button>
-      <span class="view-nav-sep">/</span>
-      <span class="view-nav-title">New Cheat from camera</span>
-    </div>
+  <div class="view" id="view-probe" style="display:none"><!-- probe is now a modal --></div>
 
-    <!-- State: awaiting probe -->
-    <div class="probe-state" id="probe-idle-state">
-      <div class="probe-state-icon">&#128247;</div>
-      <p class="probe-state-title">Ready to probe</p>
-      <p class="probe-state-body">Set your camera to the exact configuration you want to capture, then click Probe to read all available controls and their current values.</p>
-      <button class="btn-primary" onclick="runProbe()" id="btn-run-probe">
-        &#9679; Probe camera now
-      </button>
-    </div>
-
-    <!-- State: probing in progress -->
-    <div class="probe-state" id="probe-running-state" style="display:none">
-      <div class="probe-state-icon" style="animation: pulse 1s infinite;">&#9679;</div>
-      <p class="probe-state-title">Probing camera...</p>
-      <p class="probe-state-body">Reading all available controls and their current values.</p>
-    </div>
-
-    <!-- Probe log -->
-    <div class="probe-log" id="probe-log" style="display:none"></div>
-
-    <!-- Controls display — shown after probe completes -->
-    <div id="probe-controls-section" style="display:none">
-      <p class="controls-section-label">Captured controls</p>
-      <div id="probe-controls"></div>
-
-      <!-- Save form -->
-      <div class="save-form">
-        <p class="save-form-title">Save as .cheat</p>
-        <div class="form-row">
-          <div class="form-field">
-            <label class="form-label">Category <span class="req">*</span></label>
-            <select class="form-select" id="save-category">
-              <option value="">Select...</option>
-              <option>Landscape</option><option>Portrait</option><option>Wildlife</option>
-              <option>Architecture</option><option>Street</option><option>Macro</option>
-              <option>Astrophotography</option><option>Long exposure</option><option>Night</option>
-              <option>Sports / Action</option><option>Seascape</option><option>Forest</option>
-              <option>Weather / Storm</option><option>Time-lapse</option>
-              <option>Focus bracketing</option><option>Exposure bracketing</option>
-              <option>Multi-exposure</option><option>Live composite</option>
-              <option>HDR</option><option>High speed</option><option>Abstract</option>
-              <option>Fine art</option><option>Other</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label class="form-label">Description <span class="req">*</span></label>
-            <input type="text" class="form-input" id="save-desc"
-              placeholder="e.g. moonlit night scene" maxlength="40">
-          </div>
+<!-- ── PROBE MODAL OVERLAY ── -->
+<div class="view-overlay" id="probe-overlay" onclick="handleProbeOverlayClick(event)">
+  <div class="view-overlay-panel">
+    <div class="view-overlay-header" id="probe-overlay-header">
+      <div>
+        <p class="view-overlay-title" id="probe-overlay-title">New Cheat from Camera</p>
+        <div class="view-overlay-meta">
+          <span id="probe-overlay-camera"></span>
         </div>
-        <div class="form-row">
-          <div class="form-field full">
-            <label class="form-label">Notes</label>
-            <textarea class="form-input" id="save-notes" rows="3"
-              placeholder="Shooting conditions, intent, tips for use..."
-              style="resize:vertical; font-family:var(--sans); line-height:1.5;"></textarea>
-          </div>
+      </div>
+      <button class="view-overlay-close" onclick="closeProbeOverlay()">&#10005;</button>
+    </div>
+    <div class="view-overlay-body">
+
+      <!-- State: awaiting probe -->
+      <div class="probe-state" id="probe-idle-state">
+        <div class="probe-state-icon">&#128247;</div>
+        <p class="probe-state-title">Ready to probe</p>
+        <p class="probe-state-body">Probing the connected camera collects its current settings and saves them in an OlyProbe .cheat file that can be edited, shared, and loaded into supported Olympus/OM cameras to automatically set them with the values in the .cheat file.</p>
+        <button class="btn-primary" onclick="runProbe()" id="btn-run-probe">
+          &#9679; Probe camera now
+        </button>
+      </div>
+
+      <!-- State: probing in progress -->
+      <div class="probe-state" id="probe-running-state" style="display:none">
+        <div class="probe-state-icon" style="animation: pulse 1s infinite;">&#9679;</div>
+        <p class="probe-state-title">Probing camera...</p>
+        <p class="probe-state-body">Reading all available controls and their current values.</p>
+      </div>
+
+      <!-- Step 1 (USB only): Set exposure triangle manually -->
+      <div id="probe-step1" style="display:none">
+        <p class="probe-state-title" style="text-align:center;padding:16px 0 4px 0;">Step 1 of 2 — Set exposure values</p>
+        <p class="probe-state-body" style="text-align:center;margin-bottom:20px;">Set the connected camera to Manual mode and select the allowable values below for Shutter Speed, Aperture, and optionally Exposure Compensation matching the current settings shown on the camera, then press Continue.</p>
+        <div id="probe-manual-controls" style="padding:0 8px;"></div>
+        <div style="text-align:center;padding:20px 0 8px 0;">
+          <button class="btn-primary" id="btn-step1-continue" onclick="probeStep1Continue()" disabled>Continue &#8594;</button>
+          <p id="probe-step1-hint" style="font-size:11px;color:var(--ink-3);margin-top:8px;">Select Shutter Speed and Aperture to continue</p>
         </div>
-        <div class="form-actions">
-          <button class="btn-primary" onclick="saveCheat()">&#8659; Save .cheat file</button>
-          <button class="btn-secondary" id="btn-upload-probe" onclick="uploadCheat()" disabled>
-            &#8679; Upload to library
-          </button>
-          <div class="online-badge offline" id="online-badge-probe">
-            <span class="status-dot"></span> Offline
+      </div>
+
+      <!-- Probe log -->
+      <div class="probe-log" id="probe-log" style="display:none"></div>
+
+      <!-- Step 2: Results + save form -->
+      <div id="probe-controls-section" style="display:none">
+        <p class="controls-section-label">Captured controls</p>
+        <div id="probe-controls"></div>
+
+        <!-- Save form -->
+        <div class="save-form">
+          <p class="save-form-title">Save as .cheat</p>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label">Category <span class="req">*</span></label>
+              <select class="form-select" id="save-category">
+                <option value="">Select...</option>
+                <option>Landscape</option><option>Portrait</option><option>Wildlife</option>
+                <option>Architecture</option><option>Street</option><option>Macro</option>
+                <option>Astrophotography</option><option>Long exposure</option><option>Night</option>
+                <option>Sports / Action</option><option>Seascape</option><option>Forest</option>
+                <option>Weather / Storm</option><option>Time-lapse</option>
+                <option>Focus bracketing</option><option>Exposure bracketing</option>
+                <option>Multi-exposure</option><option>Live composite</option>
+                <option>HDR</option><option>High speed</option><option>Abstract</option>
+                <option>Fine art</option><option>Other</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Description <span class="req">*</span></label>
+              <input type="text" class="form-input" id="save-desc"
+                placeholder="e.g. moonlit night scene" maxlength="40">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field full">
+              <label class="form-label">Notes</label>
+              <textarea class="form-input" id="save-notes" rows="3"
+                placeholder="Shooting conditions, intent, tips for use..."
+                style="resize:vertical; font-family:var(--sans); line-height:1.5;"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" onclick="saveCheat()">&#8659; Save .cheat file</button>
+            <button class="btn-secondary" id="btn-upload-probe" onclick="uploadCheat()" disabled>
+              &#8679; Upload to library
+            </button>
+            <div class="online-badge offline" id="online-badge-probe">
+              <span class="status-dot"></span> Offline
+            </div>
           </div>
         </div>
       </div>
+
     </div>
   </div>
+</div>
+
+<!-- ── HELP MODAL ── -->
+<div class="help-overlay" id="help-overlay" onclick="handleHelpOverlayClick(event)">
+  <div class="help-panel">
+    <div class="help-header">
+      <span class="help-header-title">OlyProbe Help</span>
+      <button class="view-overlay-close" onclick="closeHelp()">&#10005;</button>
+    </div>
+    <div class="help-body">
+      <nav class="help-nav" id="help-nav"></nav>
+      <div class="help-content" id="help-content"></div>
+    </div>
+  </div>
+</div>
 
 </main>
 
@@ -1262,6 +1383,8 @@ function setConnStatus(status, label) {
   // Probe button: enabled only when connected, disabled after probe completes
   var probeBtn = document.getElementById('btn-probe');
   if (probeBtn) probeBtn.disabled = (status !== 'connected');
+  var probeEmptyBtn = document.getElementById('btn-probe-empty');
+  if (probeEmptyBtn) probeEmptyBtn.disabled = (status !== 'connected');
   // Update send-to-camera button
   var sendBtn = document.getElementById('btn-send-to-camera');
   if (sendBtn) sendBtn.disabled = (status !== 'connected');
@@ -1353,7 +1476,7 @@ function renderLibrary() {
         '<div class="empty-icon">&#128247;</div>' +
         '<p class="empty-title">No Cheats yet</p>' +
         '<p class="empty-body">Connect your camera, set it up for a shooting scenario, then click <strong>Probe camera</strong> to capture and save your first .cheat file.</p>' +
-        '<button class="btn-primary" onclick="startProbe()"><span>&#9679;</span> Probe camera</button>' +
+        '<button class="btn-primary" id="btn-probe-empty" onclick="startProbe()" ' + (state.connStatus === 'connected' ? '' : 'disabled') + '><span>&#9679;</span> Probe camera</button>' +
       '</div>';
     return;
   }
@@ -1499,7 +1622,6 @@ function buildCompatSection(type, label, items) {
     html += '<div class="compat-row">' +
       '<div class="compat-cell">' +
         '<div class="compat-prop-name">' + esc(item.label) + '</div>' +
-        '<div class="compat-prop-api">' + esc(item.name) + '</div>' +
       '</div>' +
       '<div class="compat-cell">' +
         '<span class="compat-source-val' + (type === 'no-match' ? ' unavailable' : '') + '">' +
@@ -1664,6 +1786,346 @@ function uploadCheat() {
   .catch(function() { toast('Upload failed'); });
 }
 
+// ── HELP SYSTEM ───────────────────────────────────────────────────────────────
+
+var HELP_TOPICS = [
+  { section: 'Getting Started', items: [
+    { id: 'what-is-olyprobe', title: 'What is OlyProbe?', content: `
+<h2>What is OlyProbe?</h2>
+<p class="help-lead">A free desktop tool for Olympus and OM SYSTEM camera owners that captures, saves, and applies complete camera setting configurations.</p>
+<h3>The idea</h3>
+<p>Every photographer has settings they return to again and again — a particular combination of ISO, white balance, picture mode, drive mode, and exposure values that works for street photography, or wildlife, or long exposures at night. OlyProbe lets you capture those configurations as <strong>.cheat files</strong> that can be saved, shared, and loaded back into your camera in seconds.</p>
+<h3>What it does</h3>
+<ul>
+  <li><strong>Probe</strong> — read all current camera settings over WiFi or USB</li>
+  <li><strong>Save</strong> — store them as a named .cheat file with category and notes</li>
+  <li><strong>View &amp; edit</strong> — review and adjust any value in a saved cheat</li>
+  <li><strong>Load &amp; apply</strong> — push all settings from a cheat to your camera automatically</li>
+  <li><strong>Compare</strong> — view multiple cheats side by side</li>
+  <li><strong>Share</strong> — give your cheats to other photographers</li>
+</ul>
+<h3>Supported cameras</h3>
+<ul>
+  <li><strong>OM-1 Mark II</strong> — full WiFi and USB tethering (19 properties)</li>
+  <li><strong>E-M10 Mark IV</strong> — full WiFi tethering</li>
+  <li><strong>E-PL8</strong> — probe only (restricted WiFi)</li>
+  <li>E-M1 series, E-M1X — WiFi and USB (untested)</li>
+</ul>
+<div class="help-note">OlyProbe runs as a local server on your Windows PC. The browser interface connects to it at <code>localhost:5000</code>. Your camera data never leaves your computer unless you choose to share cheats.</div>
+`},
+    { id: 'setup', title: 'Setup &amp; installation', content: `
+<h2>Setup &amp; installation</h2>
+<p class="help-lead">OlyProbe installs as a standard Windows application and runs a local server that your browser connects to.</p>
+<h3>System requirements</h3>
+<ul>
+  <li>Windows 10 or 11</li>
+  <li>Olympus or OM SYSTEM camera with WiFi or USB tethering support</li>
+  <li>Chrome, Edge, or Firefox browser</li>
+</ul>
+<h3>Installation</h3>
+<p>Download the installer from <strong>olyprobe.netlify.app</strong> and run it. OlyProbe will appear in your Start menu. Launch it to start the local server, then open your browser to <code>http://localhost:5000</code>.</p>
+<h3>WiFi setup</h3>
+<p>On your camera, enable the WiFi hotspot using <strong>Device Connection</strong> mode (not sharing mode). Connect your PC to the camera's WiFi network, then click <strong>Connect → WiFi</strong> in OlyProbe.</p>
+<h3>USB setup (OM-1 only)</h3>
+<p>Connect the camera via USB and set the USB mode to <strong>Raw/Control</strong> in the camera menus. Select <strong>USB</strong> in OlyProbe's connection toggle, then click <strong>Connect</strong>.</p>
+<div class="help-tip">USB tethering and WiFi cannot be used simultaneously — connecting via USB disables the camera's WiFi.</div>
+`},
+  ]},
+  { section: 'Connecting', items: [
+    { id: 'wifi-connect', title: 'WiFi connection', content: `
+<h2>WiFi connection</h2>
+<p class="help-lead">Connect to your camera over its built-in WiFi hotspot for full probe and apply functionality.</p>
+<h3>Before connecting</h3>
+<p>On the camera, navigate to the WiFi settings and enable <strong>Device Connection</strong> mode. The camera will display its network name (SSID) and create a hotspot. On your PC, connect to that WiFi network. The camera is always at IP address <code>192.168.0.10</code>.</p>
+<h3>Connecting in OlyProbe</h3>
+<p>Make sure <strong>WiFi</strong> is selected in the connection toggle at the top of the screen. Click <strong>Connect</strong>. The status indicator will show "Connected" when successful.</p>
+<h3>What WiFi provides</h3>
+<p>WiFi tethering gives access to 8 settable properties: shutter speed, aperture, ISO, exposure compensation, white balance, picture mode, AF mode, drive mode, and image quality. These are read live from the camera and written back when loading a cheat.</p>
+<div class="help-note">WiFi tethering works on all supported camera models. USB tethering (OM-1 only) provides additional properties not available over WiFi.</div>
+`},
+    { id: 'usb-connect', title: 'USB connection', content: `
+<h2>USB connection (OM-1 only)</h2>
+<p class="help-lead">Connect your OM-1 Mark II via USB cable for access to 19 camera properties — more than WiFi provides.</p>
+<h3>Before connecting</h3>
+<p>On the OM-1, go to <strong>Menu → Connection → USB Mode</strong> and select <strong>Raw/Control</strong>. Connect the camera to your PC with a USB cable. Select <strong>USB</strong> in OlyProbe's connection toggle.</p>
+<h3>USB-only properties</h3>
+<p>USB tethering provides everything WiFi does, plus: flash mode, flash compensation, metering mode, subject detection, high res shot, HDR, and WB compensation A/G axes.</p>
+<h3>Limitations</h3>
+<p>Due to how Windows communicates with the camera over USB, three properties cannot be read electronically: <strong>shutter speed, aperture, and exposure compensation</strong>. When probing via USB, OlyProbe will ask you to enter these values manually by looking at your camera display.</p>
+<div class="help-tip">For best results when probing via USB, set the camera to Manual mode so you have deliberate values for all three exposure settings to enter.</div>
+`},
+  ]},
+  { section: 'Working with Cheats', items: [
+    { id: 'probe', title: 'Probing the camera', content: `
+<h2>Probing the camera</h2>
+<p class="help-lead">A probe reads all current camera settings and prepares them for saving as a .cheat file.</p>
+<h3>Starting a probe</h3>
+<p>With your camera connected, configure it exactly as you want — set your shooting mode, ISO, white balance, picture mode, drive mode, and all other settings. Then click <strong>Probe camera</strong> in the toolbar or on the empty library screen.</p>
+<h3>USB probe — Step 1</h3>
+<p>When probing via USB, OlyProbe first asks you to set the camera to Manual mode and enter the shutter speed, aperture, and (optionally) exposure compensation values shown on your camera. Select the matching values from the chips provided, then click <strong>Continue</strong>. Shutter speed and aperture are required; exposure compensation is optional.</p>
+<h3>Probe results</h3>
+<p>After probing, all captured settings are displayed grouped by category. Review them to confirm they match your intended configuration before saving.</p>
+<h3>Saving</h3>
+<p>Choose a <strong>category</strong>, enter a <strong>description</strong>, add optional notes, then click <strong>Save .cheat file</strong>. The cheat appears in your library immediately.</p>
+`},
+    { id: 'view-edit', title: 'Viewing &amp; editing cheats', content: `
+<h2>Viewing &amp; editing cheats</h2>
+<p class="help-lead">Open any saved cheat to review its settings, change individual values, update notes, or save it as a new cheat.</p>
+<h3>Opening a cheat</h3>
+<p>Click <strong>View</strong> on any cheat card in the library. The View overlay shows all captured settings grouped by category, with current values highlighted in the available values list.</p>
+<h3>Editing values</h3>
+<p>For properties with a defined set of allowed values, click any chip to select a new value. Changed values are highlighted. Click <strong>Save changes</strong> to update the existing cheat, or <strong>Save as new Cheat</strong> to create a new one (you will be prompted for a name).</p>
+<h3>Editing metadata</h3>
+<p>The category and description fields at the top of the overlay are editable. Notes can be updated in the notes field below the controls. These changes are saved with the cheat.</p>
+<div class="help-tip">Use "Save as new Cheat" to create exposure variations — for example, a base landscape cheat at ISO 100 and derivative versions at ISO 400 and 800 for varying light conditions.</div>
+`},
+    { id: 'load-apply', title: 'Loading &amp; applying cheats', content: `
+<h2>Loading &amp; applying cheats</h2>
+<p class="help-lead">Load a cheat to push its settings to your connected camera automatically.</p>
+<h3>Starting a load</h3>
+<p>With your camera connected, click <strong>Load</strong> on any cheat card. OlyProbe probes the camera to read its current state, then compares it against the cheat.</p>
+<h3>Compatibility report</h3>
+<p>Settings are grouped into three categories:</p>
+<ul>
+  <li><strong>Ready to apply</strong> — the cheat value is valid for your camera and will be set</li>
+  <li><strong>No exact match</strong> — the camera supports this property but the cheat's value isn't in the allowed list; you can choose an alternative</li>
+  <li><strong>Not applicable</strong> — your camera doesn't support this property (e.g. USB-only properties when connected via WiFi)</li>
+</ul>
+<h3>Applying</h3>
+<p>Review the compatibility report and adjust any "no exact match" settings using the dropdowns provided. Click <strong>Apply to camera</strong>. OlyProbe writes all applicable settings to the camera.</p>
+<div class="help-note">Shooting mode (P/A/S/M) is controlled by a physical dial and cannot be set electronically. It is shown for reference but excluded from apply operations.</div>
+`},
+    { id: 'compare', title: 'Comparing cheats', content: `
+<h2>Comparing cheats</h2>
+<p class="help-lead">View multiple cheats side by side to see how their settings differ.</p>
+<h3>Adding to comparison</h3>
+<p>Click <strong>Compare</strong> on any cheat card to add it to the comparison. A red indicator appears on cards currently in the comparison. Click the toolbar <strong>Compare</strong> button to open the comparison table.</p>
+<h3>The comparison table</h3>
+<p>Each cheat appears as a column. Properties that differ between cheats are easy to spot. Click <strong>×</strong> on any column header to remove that cheat from the comparison.</p>
+<h3>Exporting</h3>
+<p>Click <strong>Export CSV</strong> to download the comparison as a spreadsheet — you will be prompted for a filename. Click <strong>Export PDF</strong> to print or save as a PDF.</p>
+`},
+    { id: 'sharing', title: 'Sharing cheats', content: `
+<h2>Sharing cheats</h2>
+<p class="help-lead">Share your .cheat files with other OlyProbe users or import cheats you receive.</p>
+<h3>Exporting cheats</h3>
+<p>Click <strong>Share cheats</strong> in the toolbar to open the Cheats folder in Windows Explorer. Copy any .cheat files you want to share.</p>
+<h3>Importing cheats</h3>
+<p>Drag a .cheat file onto the OlyProbe window — a drop zone will appear. Release to import. The cheat will appear in your library.</p>
+<h3>File format</h3>
+<p>.cheat files are binary files with a CRC32 checksum to ensure integrity. They contain the camera model, firmware version, capture date, all property values, and your category, description, and notes. The format is open — contact us if you want to build tools that read or create .cheat files.</p>
+<div class="help-tip">Cheats are stored in <code>~/OlyProbe/Cheats/</code> on your PC. Filenames are in the format <code>description_timestamp.cheat</code> for easy sorting.</div>
+`},
+  ]},
+  { section: 'Reference', items: [
+    { id: 'properties', title: 'Camera properties', content: `
+<h2>Camera properties reference</h2>
+<p class="help-lead">Properties that OlyProbe can read and write, organized by connection type.</p>
+<h3>WiFi properties (all supported cameras)</h3>
+<ul>
+  <li><strong>Shutter Speed</strong> — from 1/8000 to 60"</li>
+  <li><strong>Aperture</strong> — full range supported by attached lens</li>
+  <li><strong>ISO Speed</strong> — Auto, 100–102400</li>
+  <li><strong>Exposure Compensation</strong> — ±5.0 EV in 1/3 stop increments</li>
+  <li><strong>White Balance</strong> — Auto, Sunny, Shade, Cloudy, Incandescent, Fluorescent, Underwater, WB Flash, One-Touch WB 1–4, Custom WB</li>
+  <li><strong>Picture Mode</strong> — Vivid, Natural, Muted, Portrait, Landscape, Flat, Monotone, e-Portrait</li>
+  <li><strong>AF Mode</strong> — S-AF, C-AF, MF, Preset MF, Starry Sky AF</li>
+  <li><strong>Drive Mode</strong> — Single frame, Sequential, Silent variants, Pro Cap, Self-timer modes</li>
+  <li><strong>Image Quality</strong> — Large Fine/Normal/Basic, Medium Fine/Normal, Small Fine/Normal/Basic, RAW, RAW+Large Fine</li>
+  <li><strong>Movie Exposure Mode</strong> — P, A, S, M</li>
+</ul>
+<h3>USB-only properties (OM-1 Mark II)</h3>
+<ul>
+  <li><strong>Flash Mode</strong> — Auto, Off, On/Fill, Red-eye, Slow sync</li>
+  <li><strong>Flash Compensation</strong> — ±3.0 EV</li>
+  <li><strong>Metering Mode</strong> — Digital ESP, Center weighted, Spot, Spot highlight, Spot shadow</li>
+  <li><strong>Subject Detection</strong> — Off, Human, Motorsports, Airplanes, Trains, Birds, Dogs &amp; cats</li>
+  <li><strong>High Res Shot</strong> — Off, On tripod, On handheld</li>
+  <li><strong>HDR</strong> — Off, HDR1, HDR2, Auto HDR</li>
+  <li><strong>WB Compensation A / G</strong> — ±7 steps on each axis</li>
+</ul>
+<div class="help-note">Shooting mode (P/A/S/M) is set by the camera's physical mode dial and cannot be changed electronically. It is captured at probe time for reference only.</div>
+`},
+    { id: 'troubleshooting', title: 'Troubleshooting', content: `
+<h2>Troubleshooting</h2>
+<p class="help-lead">Common issues and how to resolve them.</p>
+<h3>Camera not found (WiFi)</h3>
+<ul>
+  <li>Ensure the camera is in <strong>Device Connection</strong> WiFi mode — not sharing/transfer mode</li>
+  <li>Confirm your PC is connected to the camera's WiFi network (not your home network)</li>
+  <li>Try disconnecting and reconnecting the camera WiFi on both devices</li>
+  <li>Some cameras require you to accept the connection on the camera screen</li>
+</ul>
+<h3>Camera not found (USB)</h3>
+<ul>
+  <li>Confirm USB mode is set to <strong>Raw/Control</strong> on the OM-1 (not Storage or MTP)</li>
+  <li>Try a different USB cable or port</li>
+  <li>Close OM Capture if it is running — it locks the USB connection</li>
+  <li>USB tethering is only supported on the OM-1 series</li>
+</ul>
+<h3>Settings not applying</h3>
+<ul>
+  <li>Some settings cannot be changed while the camera is in certain modes — check the camera display for error messages</li>
+  <li>Shooting mode (P/A/S/M) cannot be set electronically — set it manually on the camera first</li>
+  <li>Image quality settings may require the camera to not be actively recording</li>
+</ul>
+<h3>Probe returns wrong values</h3>
+<ul>
+  <li>Via USB: shutter speed, aperture, and exposure compensation must be entered manually — they cannot be read electronically due to Windows driver limitations</li>
+  <li>Aperture reads as f/-- if the lens is not communicating — try half-pressing the shutter to wake the lens</li>
+</ul>
+<h3>Delete not working</h3>
+<p>Ensure the OlyProbe server is running. If the issue persists, you can manually delete .cheat files from the Cheats folder via <strong>Share cheats → open folder</strong>.</p>
+`},
+    { id: 'about', title: 'About OlyProbe', content: `
+<h2>About OlyProbe</h2>
+<p class="help-lead">OlyProbe is a free tool made by photographers, for photographers.</p>
+<h3>Computography Lab</h3>
+<p>OlyProbe is developed and maintained by <strong>Computography Lab</strong>. We build tools that connect photography knowledge with modern software, making cameras easier to master and settings easier to share.</p>
+<h3>Contact</h3>
+<ul>
+  <li>Email: <strong>olyprobe@outlook.com</strong></li>
+  <li>Website: <strong>olyprobe.netlify.app</strong></li>
+  <li>GitHub: <strong>github.com/olyprobe/olyprobe</strong></li>
+</ul>
+<h3>Disclaimer</h3>
+<p>OlyProbe is an independent project and is not affiliated with, endorsed by, or associated with OM Digital Solutions Corporation (OMDS), Olympus Corporation, or any of their subsidiaries or affiliates. Olympus®, OM SYSTEM®, and related product names are trademarks of their respective owners.</p>
+<p>OlyProbe communicates with cameras using documented and observed protocols. Use it at your own risk. We are not responsible for any damage to your camera, data loss, or other adverse effects from using this software.</p>
+<h3>License</h3>
+<p>OlyProbe is free to use for personal and commercial photography. The .cheat file format is open — you are welcome to build tools that read and create .cheat files. Please credit OlyProbe if you do.</p>
+<h3>Version</h3>
+<p>OlyProbe v0.1 beta — May 2026</p>
+<div class="help-tip">Found a bug or have a feature request? Email us at olyprobe@outlook.com — we read everything.</div>
+`},
+  ]},
+];
+
+var _currentHelpTopic = null;
+
+function openHelp(topicId) {
+  var overlay = document.getElementById('help-overlay');
+  overlay.classList.add('open');
+  if (!document.getElementById('help-nav').innerHTML) {
+    buildHelpNav();
+  }
+  showHelpTopic(topicId || HELP_TOPICS[0].items[0].id);
+}
+
+function closeHelp() {
+  document.getElementById('help-overlay').classList.remove('open');
+}
+
+function handleHelpOverlayClick(e) {
+  if (e.target === document.getElementById('help-overlay')) closeHelp();
+}
+
+function buildHelpNav() {
+  var nav = document.getElementById('help-nav');
+  var html = '';
+  HELP_TOPICS.forEach(function(section) {
+    html += '<div class="help-nav-section" data-section="' + section.section + '">';
+    html += '<div class="help-nav-group-title" onclick="toggleHelpSection(this)">';
+    html += section.section + '<i class="chev">&#9662;</i></div>';
+    html += '<ul class="help-nav-items">';
+    section.items.forEach(function(item) {
+      html += '<li class="help-nav-item" data-id="' + item.id + '" onclick="showHelpTopic(\'' + item.id + '\')">' + item.title + '</li>';
+    });
+    html += '</ul></div>';
+  });
+  nav.innerHTML = html;
+}
+
+function toggleHelpSection(el) {
+  el.parentElement.classList.toggle('collapsed');
+}
+
+function showHelpTopic(id) {
+  _currentHelpTopic = id;
+  var topic = null;
+  HELP_TOPICS.forEach(function(s) {
+    s.items.forEach(function(item) { if (item.id === id) topic = item; });
+  });
+  if (!topic) return;
+  document.getElementById('help-content').innerHTML = topic.content;
+  // Update nav active state
+  document.querySelectorAll('.help-nav-item').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+  // Scroll content to top
+  document.getElementById('help-content').scrollTop = 0;
+}
+function openProbeOverlay() {
+  var cam = state.cameraModel || '';
+  var el = document.getElementById('probe-overlay-camera');
+  if (el) el.textContent = cam ? ('📷 ' + cam) : '';
+  document.getElementById('probe-overlay').classList.add('open');
+}
+
+function closeProbeOverlay() {
+  document.getElementById('probe-overlay').classList.remove('open');
+  // Reset probe state so it can be run again
+  document.getElementById('probe-idle-state').style.display = '';
+  document.getElementById('probe-running-state').style.display = 'none';
+  document.getElementById('probe-controls-section').style.display = 'none';
+  document.getElementById('probe-log').style.display = 'none';
+  var runBtn = document.getElementById('btn-run-probe');
+  if (runBtn) runBtn.disabled = false;
+  clearPendingEdits('probe-controls');
+  clearPendingEdits('probe-manual-controls');
+  // Re-enable home screen probe button if still connected
+  if (state.connStatus === 'connected') {
+    var homeBtn = document.getElementById('btn-probe');
+    if (homeBtn) homeBtn.disabled = false;
+  }
+}
+
+function handleProbeOverlayClick(e) {
+  // Intentionally no close on background click — probe has unsaved data
+}
+
+function validateStep1Continue() {
+  var edits = getPendingEdits('probe-manual-controls');
+  // Require both shutter speed and aperture to be set
+  var hasShutter  = edits['shutspeedvalue'] !== undefined;
+  var hasAperture = edits['focalvalue'] !== undefined;
+  var btn  = document.getElementById('btn-step1-continue');
+  var hint = document.getElementById('probe-step1-hint');
+  if (btn) btn.disabled = !(hasShutter && hasAperture);
+  if (hint) {
+    if (!hasShutter && !hasAperture) hint.textContent = 'Select Shutter Speed and Aperture to continue';
+    else if (!hasShutter) hint.textContent = 'Select Shutter Speed to continue';
+    else if (!hasAperture) hint.textContent = 'Select Aperture to continue';
+    else hint.textContent = '';
+  }
+}
+
+function probeStep1Continue() {
+  // Apply manual exposure selections to probeData
+  var edits = getPendingEdits('probe-manual-controls');
+  if (state.probeData) {
+    state.probeData.controls = state.probeData.controls.map(function(ctrl) {
+      if (edits[ctrl.name] !== undefined) {
+        return Object.assign({}, ctrl, { current_value: edits[ctrl.name] });
+      }
+      return ctrl;
+    });
+  }
+  document.getElementById('probe-step1').style.display = 'none';
+  var physicalNames = {expcomp:1, shutspeedvalue:1, focalvalue:1};
+  showProbeResults(state.probeData, true, physicalNames);
+}
+
+function showProbeResults(data, isUsb, physicalNames) {
+  renderControls('probe-controls', data.controls, false);
+  document.getElementById('probe-controls-section').style.display = 'block';
+  if (state.isOnline) {
+    document.getElementById('btn-upload-probe').disabled = false;
+  }
+  updateOnlineBadges();
+  var probeBtn = document.getElementById('btn-probe');
+  if (probeBtn) probeBtn.disabled = true;
+}
+
 // ── PROBE / CREATE ────────────────────────────────────────────
 function startProbe() {
   if (state.connStatus !== 'connected') {
@@ -1676,11 +2138,15 @@ function startProbe() {
   document.getElementById('probe-log').style.display = 'none';
   document.getElementById('probe-log').innerHTML = '';
   document.getElementById('probe-controls-section').style.display = 'none';
+  var step1 = document.getElementById('probe-step1');
+  if (step1) step1.style.display = 'none';
+  var mc = document.getElementById('probe-manual-controls');
+  if (mc) mc.innerHTML = '';
   document.getElementById('save-category').value = '';
   document.getElementById('save-desc').value = '';
   document.getElementById('save-notes').value = '';
   state.probeData = null;
-  showView('probe');
+  openProbeOverlay();
 }
 
 function runProbe() {
@@ -1709,15 +2175,31 @@ function runProbe() {
     }
     state.probeData = data;
     plog('Connected: ' + data.model, 'log-ok');
-    plog('Firmware: ' + (data.firmware || 'unknown'));
-    plog('Querying ' + data.controls.length + ' properties...', 'log-dim');
-    data.controls.forEach(function(ctrl) {
-      plog('✓ ' + ctrl.name + '  [' + ctrl.allowed_values.length + ' values]', 'log-ok');
-    });
-    plog('Probe complete — ' + data.controls.length + ' controls found', 'log-ok');
+    plog('Probe complete — ' + data.controls.length + ' controls captured', 'log-ok');
 
-    renderControls('probe-controls', data.controls);
-    document.getElementById('probe-controls-section').style.display = 'block';
+    var isUsb = (data.method === 'usb');
+    var physicalNames = {expcomp:1, shutspeedvalue:1, focalvalue:1};
+
+    if (isUsb) {
+      // Check if any physical-dial properties have no cached value
+      var needsManual = data.controls.filter(function(c) {
+        return physicalNames[c.name] && (c.current_value === null || c.current_value === undefined);
+      });
+      if (needsManual.length > 0) {
+        // Show step 1: manual exposure entry
+        renderControls('probe-manual-controls', needsManual, true);
+        document.getElementById('probe-step1').style.display = 'block';
+        return; // probeStep1Continue() will show results
+      }
+    }
+    showProbeResults(data, isUsb, physicalNames);
+
+    if (state.isOnline) {
+      document.getElementById('btn-upload-probe').disabled = false;
+    }
+    updateOnlineBadges();
+    var probeBtn2 = document.getElementById('btn-probe');
+    if (probeBtn2) probeBtn2.disabled = true;
     if (state.isOnline) {
       document.getElementById('btn-upload-probe').disabled = false;
     }
@@ -1742,6 +2224,18 @@ function saveCheat() {
   if (!desc) { toast('Please enter a description'); return; }
   if (!state.probeData) { toast('No probe data to save'); return; }
 
+  // Apply chip edits from manual entry panel (physical-dial properties)
+  var edits = Object.assign({},
+    getPendingEdits('probe-manual-controls'),
+    getPendingEdits('probe-controls')
+  );
+  var controls = state.probeData.controls.map(function(ctrl) {
+    if (edits[ctrl.name] !== undefined) {
+      return Object.assign({}, ctrl, { current_value: edits[ctrl.name] });
+    }
+    return ctrl;
+  });
+
   fetch('/api/save_cheat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1749,19 +2243,18 @@ function saveCheat() {
       category: cat,
       description: desc,
       notes: notes,
-      probe_data: state.probeData
+      probe_data: Object.assign({}, state.probeData, { controls: controls })
     })
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.ok) {
       toast('Saved: ' + data.description + '.cheat');
-      // Clear all form fields
       document.getElementById('save-category').value = '';
       document.getElementById('save-desc').value = '';
       document.getElementById('save-notes').value = '';
       loadCheats();
-      showView('library');
+      closeProbeOverlay();
     } else {
       toast('Save failed: ' + (data.error || 'unknown'));
     }
@@ -1770,7 +2263,8 @@ function saveCheat() {
 }
 
 // ── CONTROLS RENDERER ─────────────────────────────────────────
-function renderControls(containerId, controls) {
+function renderControls(containerId, controls, editable) {
+  editable = editable || false;
   var el = document.getElementById(containerId);
   if (!controls || controls.length === 0) {
     el.innerHTML = '<p style="color:var(--ink-3);font-size:13px;padding:16px 0;">No controls available.</p>';
@@ -1841,22 +2335,26 @@ function renderControls(containerId, controls) {
       if (!ctrl) return;
       var readOnly = ctrl.access === 'getonly' || ctrl.access === 'readonly';
       var label    = PROP_LABELS[ctrl.name] || ctrl.label || ctrl.name;
+      var isEditable = editable && !readOnly;
+      var safeProp = ctrl.name.replace(/['"<>&]/g, '_');
       var valChips = (ctrl.allowed_values || []).map(function(v) {
-        var isCurrent = v === ctrl.current_value;
-        return '<span class="value-chip' + (isCurrent ? ' current-value' : '') + '">' + esc(String(v)) + '</span>';
+        var isCurrent = v === ctrl.current_value && ctrl.current_value !== null;
+        var safeVal = String(v).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        var cls = 'value-chip' + (isCurrent ? ' current-value' : '') + (isEditable ? ' editable-chip' : '');
+        return '<span class="' + cls + '" data-prop="' + safeProp + '" data-value="' + safeVal + '">' +
+               esc(String(v)) + '</span>';
       }).join('');
 
       html +=
         '<div class="controls-row">' +
           '<div class="ctrl-cell">' +
-            '<div class="ctrl-name">' + esc(ctrl.name) + '</div>' +
             '<div class="ctrl-label">' + esc(label) +
               (readOnly ? '<span class="ctrl-readonly-badge">read only</span>' : '') +
             '</div>' +
           '</div>' +
           '<div class="ctrl-cell">' +
             '<span class="ctrl-value' + (readOnly ? ' readonly' : '') + '">' +
-              esc(String(ctrl.current_value || '—')) +
+              esc(ctrl.current_value !== null && ctrl.current_value !== undefined ? String(ctrl.current_value) : '—') +
             '</span>' +
           '</div>' +
           '<div class="ctrl-cell"><div class="ctrl-values">' +
@@ -1869,6 +2367,32 @@ function renderControls(containerId, controls) {
   });
 
   el.innerHTML = html;
+
+  // Attach chip click listener for editable mode (replace any previous)
+  if (el._chipListener) {
+    el.removeEventListener('click', el._chipListener);
+  }
+  if (editable) {
+    el._chipListener = function(e) {
+      var chip = e.target.closest('.editable-chip');
+      if (!chip) return;
+      var propName = chip.dataset.prop;
+      var value    = chip.dataset.value;
+      el.querySelectorAll('.editable-chip[data-prop="' + propName + '"]').forEach(function(c) {
+        c.classList.remove('current-value');
+      });
+      chip.classList.add('current-value');
+      if (!_pendingEdits[containerId]) _pendingEdits[containerId] = {};
+      _pendingEdits[containerId][propName] = value;
+      // Validate step 1 continue button if in probe step 1
+      if (containerId === 'probe-manual-controls') {
+        validateStep1Continue();
+      }
+    };
+    el.addEventListener('click', el._chipListener);
+  } else {
+    el._chipListener = null;
+  }
 }
 
 function toggleGroup(groupId) {
@@ -2203,7 +2727,16 @@ function handleNotesModalClick(e) {
   if (e.target === document.getElementById('notes-modal-overlay')) closeNotesModal();
 }
 
-// ── VIEW CHEAT OVERLAY ────────────────────────────────────────
+// ── CHIP SELECTION (view overlay editing) ─────────────────────────────────────
+var _pendingEdits = {};  // containerId -> { propName -> newValue }
+
+function getPendingEdits(containerId) {
+  return _pendingEdits[containerId] || {};
+}
+
+function clearPendingEdits(containerId) {
+  _pendingEdits[containerId] = {};
+}
 function viewCheat(id) {
   fetch('/api/cheats/' + id)
   .then(function(r) { return r.json(); })
@@ -2226,7 +2759,8 @@ function viewCheat(id) {
 
     document.getElementById('view-overlay-notes-input').value = meta.notes || '';
 
-    renderControls('view-overlay-controls', controls);
+    clearPendingEdits('view-overlay-controls');
+    renderControls('view-overlay-controls', controls, true);
     document.getElementById('view-cheat-overlay').classList.add('open');
   })
   .catch(function() { toast('Could not load cheat'); });
@@ -2240,10 +2774,24 @@ function saveViewOverlayChanges() {
 
   if (!category || !description) { toast('Category and description are required'); return; }
 
+  // Apply any chip edits to the controls
+  var edits = getPendingEdits('view-overlay-controls');
+  var controls = state.currentCheat.controls.map(function(ctrl) {
+    if (edits[ctrl.name] !== undefined) {
+      return Object.assign({}, ctrl, { current_value: edits[ctrl.name] });
+    }
+    return ctrl;
+  });
+
   fetch('/api/cheats/' + state.currentCheat.id + '/update_meta', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ category: category, description: description, notes: notes })
+    body: JSON.stringify({
+      category: category,
+      description: description,
+      notes: notes,
+      controls: controls
+    })
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
@@ -2252,6 +2800,8 @@ function saveViewOverlayChanges() {
       state.currentCheat.meta.notes       = notes;
       state.currentCheat.meta.category    = category;
       state.currentCheat.meta.description = description;
+      state.currentCheat.controls         = controls;
+      clearPendingEdits('view-overlay-controls');
       loadCheats();
     } else {
       toast('Save failed: ' + (data.error || 'unknown'));
@@ -2262,24 +2812,37 @@ function saveViewOverlayChanges() {
 
 function saveViewOverlayAsNew() {
   if (!state.currentCheat) return;
-  var category    = document.getElementById('view-overlay-category').value;
-  var description = document.getElementById('view-overlay-description').value.trim();
-  var notes       = document.getElementById('view-overlay-notes-input').value;
+  var category = document.getElementById('view-overlay-category').value;
+  var notes    = document.getElementById('view-overlay-notes-input').value;
+  var existing = document.getElementById('view-overlay-description').value.trim();
 
-  if (!category || !description) { toast('Category and description are required'); return; }
+  if (!category) { toast('Category is required'); return; }
 
-  // If description unchanged from source, let server auto-suffix
+  var newDesc = prompt('Save as new Cheat — enter a name:', existing + ' (copy)');
+  if (newDesc === null) return;
+  newDesc = newDesc.trim();
+  if (!newDesc) { toast('Name is required'); return; }
+
+  // Apply any pending chip edits to controls before saving
+  var edits = getPendingEdits('view-overlay-controls');
+  var controls = state.currentCheat.controls.map(function(ctrl) {
+    if (edits[ctrl.name] !== undefined) {
+      return Object.assign({}, ctrl, { current_value: edits[ctrl.name] });
+    }
+    return ctrl;
+  });
+
   fetch('/api/save_cheat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       category:    category,
-      description: description,
+      description: newDesc,
       notes:       notes,
       probe_data: {
         model:    state.currentCheat.meta.camera_model,
         firmware: state.currentCheat.meta.firmware,
-        controls: state.currentCheat.controls
+        controls: controls
       }
     })
   })
@@ -2287,6 +2850,7 @@ function saveViewOverlayAsNew() {
   .then(function(data) {
     if (data.ok) {
       toast('Saved as: ' + data.description);
+      clearPendingEdits('view-overlay-controls');
       loadCheats();
       closeViewOverlay();
     } else {

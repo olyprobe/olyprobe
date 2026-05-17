@@ -189,7 +189,7 @@ ONTOLOGY = [
         "default_expanded": True,
         "properties": [
             "takemode", "shutspeedvalue", "focalvalue", "isospeedvalue",
-            "expcomp", "exposemovie", "bulbtimelimit", "wbvalue",
+            "expcomp", "bulbtimelimit", "wbvalue",
         ]
     },
     {
@@ -240,7 +240,7 @@ ONTOLOGY = [
         "label": "Video",
         "default_expanded": False,
         "properties": [
-            "QualityMovie2", "qualitymovie",
+            "exposemovie", "QualityMovie2", "qualitymovie",
         ]
     },
     {
@@ -391,7 +391,6 @@ class USBCameraProxy:
         "hdr":            0xD0AD,
         "wbcompa":        0xD033,
         "wbcompg":        0xD034,
-        "rawmode":        0xD00D,
     }
 
     USB_LABELS = {
@@ -403,7 +402,7 @@ class USBCameraProxy:
         0xD0AD: "HDR",
         0xD033: "WB Compensation A",
         0xD034: "WB Compensation G",
-        0xD00D: "RAW Mode",
+        0xD00D: "Image Quality",
     }
 
     USB_ENUMS = {
@@ -418,8 +417,8 @@ class USBCameraProxy:
         0xD1D0: {1:"Off",2:"Human",3:"Motorsports",4:"Airplanes",
                  5:"Trains",6:"Birds",7:"Dogs and cats"},
         0xD1B9: {1:"Off",2:"On tripod",3:"On handheld"},
-        0xD003: {0x0002:"S-AF",0x8002:"C-AF",0x0003:"MF",
-                 0x8003:"Preset MF",0x8004:"Starry Sky AF"},
+        0xD003: {0x0001:"MF",0x0002:"S-AF",0x8002:"C-AF",
+                 0x8004:"Preset MF",0x8007:"Starry Sky AF"},
         0xD005: {1:"Auto",2:"Off",3:"On/Fill",4:"Red-eye",5:"Slow sync",
                  6:"Slow sync red-eye"},
         0xD01E: {1:"Auto",2:"Sunny",3:"Shade",4:"Cloudy",5:"Incandescent",
@@ -429,9 +428,7 @@ class USBCameraProxy:
         0xD010: {0x8301:"Vivid",0x8302:"Natural",0x8303:"Muted",
                  0x8304:"Portrait",0x8305:"Landscape",0x8306:"Flat",
                  0x8307:"Monotone",0x8611:"e-Portrait",
-                 0x0001:"Vivid",0x0002:"Natural",0x0003:"Muted",
-                 0x0004:"Portrait",0x0005:"Landscape",0x0006:"Flat",
-                 0x0007:"Monotone"},
+                 0x0002:"Natural",0x0001:"Vivid"},
         0xD08C: {1:"P",2:"A",3:"S",4:"M"},
         0xD0AD: {1:"Off",2:"HDR1",3:"HDR2",4:"Auto HDR"},
         0xD00D: {0x0000:"Off",0x0020:"RAW",0x0021:"RAW+Large Fine",
@@ -452,6 +449,9 @@ class USBCameraProxy:
         self.model    = "OM SYSTEM Camera"
         self.firmware = "USB"
         self._method  = "usb"
+        # Session cache for physical-dial properties that WPD can't read live
+        # Keyed by mtp_code, value is the decoded string
+        self._physical_cache = {}
 
     def probe(self):
         """Return controls in same format as WiFi probe."""
@@ -461,23 +461,85 @@ class USBCameraProxy:
             raise Exception(r.get("error", "USB probe failed"))
         oly_props = {p['pid']: p for p in r.get('props', [])
                      if p['guid'].lower() == self.OLY_GUID.lower()}
+
+        # Fetch real aperture allowed values from camera (lens-dependent)
+        aperture_allowed = []
+        try:
+            r_ap = self._bridge(["getallowed", f"{0xD002:04X}"])
+            if r_ap.get("ok") and r_ap.get("values"):
+                # Filter to realistic lens range: f/1.0 to f/22 (values 10-220)
+                # Full body range includes f/91 etc. which no lens supports
+                aperture_allowed = [
+                    f"f/{v/10:.1f}" for v in r_ap["values"]
+                    if 10 <= v <= 220 and v > 0
+                ]
+        except Exception:
+            pass
+        raw_mode_prop = oly_props.get(0xD00D)
+        raw_mode_val  = 0
+        if raw_mode_prop:
+            raw_mode_val = struct.unpack_from('<H',
+                bytes.fromhex(raw_mode_prop['val']), 0)[0]
+
+        # Properties with physical dials — MTP reads stale/zero values
+        # Can be written when applying a cheat, but current value is unreliable
+        PHYSICAL_PROPS = {0xD01C, 0xD002, 0xD008}
+
         controls = []
         for wifi_name, mtp_code in self.WIFI_TO_MTP.items():
             if mtp_code not in oly_props:
                 continue
             prop  = oly_props[mtp_code]
             raw   = bytes.fromhex(prop['val'])
-            val   = self._decode(mtp_code, raw)
+
+            # Physical control properties — WPD cache is always 0/stale
+            # Use session cache if available (populated by set_property)
+            if mtp_code in PHYSICAL_PROPS:
+                val = self._physical_cache.get(mtp_code, None)
+            # For IQ, combine D0C7 and D00D
+            elif mtp_code == 0xD0C7:
+                if raw_mode_val == 0x0020:
+                    val = "RAW"
+                elif raw_mode_val in (0x0021, 0x0128):
+                    val = "RAW+Large Fine"
+                else:
+                    val = self._decode(mtp_code, raw)
+            else:
+                val = self._decode(mtp_code, raw)
+
             label = PROP_LABELS.get(wifi_name) or self.USB_LABELS.get(mtp_code, wifi_name)
             enums = self.USB_ENUMS.get(mtp_code, {})
+            # For allowed values, use unique values only
+            allowed = list(dict.fromkeys(enums.values())) if enums else []
+            # For continuous range properties, provide common values as hints
+            # Note: aperture uses real values from camera descriptor (lens-dependent)
+            RANGE_HINTS = {
+                0xD008: ["-5.0","-4.0","-3.0","-2.0","-1.0","-0.7","-0.3",
+                         "0.0","+0.3","+0.7","+1.0","+2.0","+3.0","+4.0","+5.0"],
+                0xD01C: ["1/8000","1/4000","1/2000","1/1000","1/500","1/250",
+                         "1/125","1/60","1/30","1/15","1/8","1/4","1/2",
+                         "1\"","2\"","4\"","8\"","15\"","30\"","60\""],
+                0xD1C0: ["Auto","100","200","400","800","1600","3200",
+                         "6400","12800","25600","51200","102400"],
+                0xD00F: ["-3.0","-2.0","-1.0","0.0","+1.0","+2.0","+3.0"],
+                0xD002: aperture_allowed,  # real lens values from camera
+            }
+            if not allowed and mtp_code in RANGE_HINTS:
+                allowed = RANGE_HINTS[mtp_code]
+
             controls.append({
                 "name":           wifi_name if wifi_name in PROP_LABELS else f"usb_{mtp_code:04X}",
                 "label":          label,
                 "access":         "getset",
                 "current_value":  val,
-                "allowed_values": list(enums.values()) if enums else [],
+                "allowed_values": allowed,
                 "mtp_code":       mtp_code,
             })
+        # Shooting mode from WiFi desclist — read-only via USB (physical dial)
+        # Add takemode as read-only if present in cheat
+        # USB doesn't have takemode in MTP properties — skip it
+        # It will appear as unclassified if present in WiFi-sourced cheats
+
         return controls
 
     def set_property(self, name, value_str):
@@ -497,6 +559,8 @@ class USBCameraProxy:
         r = self._bridge(["setprop", f"{mtp_code:04X}", raw.hex()])
         if not r.get("ok"):
             raise Exception(r.get("error", "Set failed"))
+        # Update session cache so probe() can show the value we just wrote
+        self._physical_cache[mtp_code] = value_str
         return True
 
     def _decode(self, mtp_code, raw):
@@ -518,7 +582,7 @@ class USBCameraProxy:
         if mtp_code in (0xD008, 0xD00F):  # milliEV
             if len(raw) >= 2:
                 val = struct.unpack_from('<h', raw, 0)[0]
-                if val == 0:
+                if abs(val) <= 5:  # treat ±5 milliEV as zero
                     return "0.0"
                 ev = val / 1000
                 return f"{ev:+.1f}"
@@ -596,13 +660,11 @@ def api_connect():
             if not is_usb_permitted():
                 return jsonify(ok=False, error="USB tethering requires a premium subscription"), 200
             try:
-                from usb_camera import _bridge, find_olympus_cameras
-                # Find WPD device
+                from usb_camera import _bridge
                 r = _bridge(["list"])
                 if not r.get("ok") or not r.get("device"):
                     return jsonify(ok=False, error="No camera found. Connect via USB in Raw/Control mode."), 200
                 wpd_id = r["device"]
-                # Create a USB camera proxy object
                 cam = USBCameraProxy(wpd_id)
                 camera_client = cam
                 camera_info   = {"model": cam.model, "firmware": cam.firmware, "method": "usb"}
@@ -866,10 +928,10 @@ def api_import_cheat():
         desc     = meta.get("description", "imported")
         slug     = "".join(c if c.isalnum() else "_" for c in desc.lower())[:32]
         ts       = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-        dest     = CHEATS_DIR / f"{ts}_{slug}.cheat"
+        dest     = CHEATS_DIR / f"{slug}_{ts}.cheat"
     except Exception:
         ts   = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-        dest = CHEATS_DIR / f"{ts}_imported.cheat"
+        dest = CHEATS_DIR / f"imported_{ts}.cheat"
 
     dest.write_bytes(raw)
 
@@ -931,38 +993,13 @@ def api_sync_now():
 
 @app.route("/api/open_cheats_folder", methods=["POST"])
 def api_open_cheats_folder():
-    """Open the Cheats folder in Windows Explorer, bringing it to the foreground."""
+    """Open the Cheats folder in Windows Explorer."""
     import subprocess
     try:
-        script = f'''
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-public class Win32 {{
-    [DllImport("user32.dll")]
-    public static extern bool SetForegroundWindow(IntPtr hWnd);
-    [DllImport("user32.dll")]
-    public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-}}
-"@
-Start-Process explorer.exe -ArgumentList "{str(CHEATS_DIR)}"
-Start-Sleep -Milliseconds 800
-$hwnd = [Win32]::FindWindow("CabinetWClass", $null)
-if ($hwnd -ne [IntPtr]::Zero) {{
-    [Win32]::SetForegroundWindow($hwnd)
-}}
-'''
-        subprocess.Popen(
-            ["powershell", "-WindowStyle", "Hidden", "-Command", script],
-            creationflags=subprocess.CREATE_NO_WINDOW
-        )
+        subprocess.Popen(["explorer.exe", str(CHEATS_DIR)])
         return jsonify(ok=True)
     except Exception as e:
-        try:
-            os.startfile(str(CHEATS_DIR))
-            return jsonify(ok=True)
-        except Exception as e2:
-            return jsonify(ok=False, error=str(e2)), 500
+        return jsonify(ok=False, error=str(e)), 500
 
 # ── SAVE CHEAT ────────────────────────────────────────────────────────────────
 
@@ -997,7 +1034,7 @@ def api_save_cheat():
 
     slug     = "".join(c if c.isalnum() else "_" for c in final_description.lower())[:32]
     ts       = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-    cheat_id = f"{ts}_{slug}"
+    cheat_id = f"{slug}_{ts}"
     path     = CHEATS_DIR / f"{cheat_id}.cheat"
 
     meta = {
@@ -1020,7 +1057,7 @@ def api_save_cheat():
 
 @app.route("/api/cheats/<cheat_id>/update_meta", methods=["POST"])
 def api_update_cheat_meta(cheat_id):
-    """Update metadata fields of an existing cheat without changing controls."""
+    """Update metadata and optionally controls of an existing cheat."""
     safe = all(c.isalnum() or c in "-_" for c in cheat_id)
     if not safe:
         return jsonify(ok=False, error="Invalid ID"), 400
@@ -1033,7 +1070,13 @@ def api_update_cheat_meta(cheat_id):
         if field in body:
             updates[field] = body[field].strip()
     try:
-        update_cheat_meta(path, updates)
+        if "controls" in body:
+            # Rewrite entire cheat with updated controls
+            meta, _ = read_cheat(path)
+            meta.update(updates)
+            write_cheat(path, meta, body["controls"])
+        else:
+            update_cheat_meta(path, updates)
         return jsonify(ok=True)
     except Exception as e:
         return jsonify(ok=False, error=str(e)), 500
@@ -1102,7 +1145,8 @@ def api_load_cheat():
                 access = ctrl.get("access", "getset")
 
                 # Skip read-only properties — can't set them anyway
-                if access == "getonly":
+                # takemode is set by physical dial, treat as read-only
+                if access == "getonly" or name == "takemode":
                     continue
 
                 if name not in camera_props:
@@ -1206,6 +1250,10 @@ def api_apply_settings():
                     name  = s.get("name")
                     value = s.get("value")
                     if not name or value is None:
+                        skipped += 1
+                        continue
+                    # Skip read-only properties
+                    if name in ("takemode",):
                         skipped += 1
                         continue
                     try:
