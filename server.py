@@ -119,6 +119,8 @@ PROP_LABELS = {
     "SilentNoiseReduction": "Silent Noise Reduction",
     "QualityMovie2":      "Movie Quality",
     "qualitymovie":       "Movie Quality (Legacy)",
+    "usb_D0C7":           "Image Quality (USB)",
+    "usb_D00D":           "RAW Mode (USB)",
     # Creative modes
     "colortone":          "Picture Mode",
     "artfilter":          "Art Filter",
@@ -233,6 +235,8 @@ ONTOLOGY = [
             "imagequality", "imagesize", "colorspace",
             "noisereduction", "NoiseReductionExposureTime",
             "SilentNoiseReduction", "noisefilter",
+            # USB-only IQ properties
+            "usb_D0C7", "usb_D00D",
         ]
     },
     {
@@ -269,6 +273,22 @@ ONTOLOGY = [
 
 # Lookup set of all classified property names
 ONTOLOGY_PROP_SET = set(p for group in ONTOLOGY for p in group["properties"])
+
+WBVALUE_LABELS = {
+    "0":   "Auto",
+    "18":  "Daylight",
+    "16":  "Cloudy",
+    "17":  "Shade",
+    "20":  "Tungsten",
+    "35":  "Fluorescent Warm",
+    "23":  "Flash",
+    "64":  "Underwater",
+    "256": "One-Touch WB 1",
+    "257": "One-Touch WB 2",
+    "258": "One-Touch WB 3",
+    "259": "One-Touch WB 4",
+    "512": "CWB (Kelvin — verify on camera)",
+}
 
 def xml_value(response_text):
     """Extract value from OPC XML response like <get><value>M</value></get>"""
@@ -639,6 +659,98 @@ class USBCameraProxy:
         raise NotImplementedError(f"WiFi command '{cmd}' not supported over USB")
 
 
+# ── AUTO-DETECT ───────────────────────────────────────────────────────────────
+
+@app.route("/api/detect", methods=["GET"])
+def api_detect():
+    """
+    Quick non-connecting scan to see what cameras are available.
+    Returns: {usb: bool, wifi: bool}
+    USB check is fast (~1s). WiFi check just pings 192.168.0.10.
+    """
+    usb_found  = False
+    wifi_found = False
+
+    # USB check
+    try:
+        from usb_camera import _bridge
+        r = _bridge(["list"])
+        usb_found = bool(r.get("ok") and r.get("device"))
+    except Exception:
+        pass
+
+    # WiFi check — quick TCP ping to port 80 on camera IP
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1.5)
+        result = s.connect_ex(("192.168.0.10", 80))
+        s.close()
+        wifi_found = (result == 0)
+    except Exception:
+        pass
+
+    return jsonify(usb=usb_found, wifi=wifi_found)
+
+
+@app.route("/api/heartbeat", methods=["GET"])
+def api_heartbeat():
+    """
+    Lightweight connection health check. Returns ok=True if camera is
+    still responding, ok=False if connection has dropped.
+    """
+    with camera_lock:
+        if not camera_client:
+            return jsonify(ok=False, reason="not_connected")
+        try:
+            if isinstance(camera_client, USBCameraProxy):
+                # Read ISO — fast single-property read
+                from usb_camera import _bridge
+                r = _bridge(["getprop", f"{0xD1C0:04X}"])
+                if not r.get("ok"):
+                    return jsonify(ok=False, reason="usb_read_failed")
+            else:
+                # WiFi: send a cheap get_caminfo
+                camera_client.send_command('get_caminfo')
+            return jsonify(ok=True)
+        except Exception as e:
+            return jsonify(ok=False, reason=str(e))
+
+
+def wifi_set_camprop(cam, propname, value):
+    """
+    Set a camera property via WiFi OPC using the correct POST format.
+    """
+    import requests
+    # Normalize expcomp — camera expects integer-like strings e.g. "0", "+3", "-3"
+    # not "0.0" or "+1.0" style from USB cheats
+    if propname == 'expcomp':
+        try:
+            fv = float(value.replace('+',''))
+            if fv == 0:
+                value = '0'
+            elif fv == int(fv):
+                value = f"{int(fv):+d}" if fv != 0 else '0'
+            # else leave as-is (camera's own enum values)
+        except (ValueError, AttributeError):
+            pass
+
+    url = "http://192.168.0.10/set_camprop.cgi"
+    params = {'com': 'set', 'propname': propname}
+    xml_body = f'<?xml version="1.0"?><set><value>{value}</value></set>'.encode('utf-8')
+    headers = {
+        'Host': '192.168.0.10',
+        'User-Agent': 'OlympusCameraKit',
+        'Content-Type': 'text/plain;charset=utf-8',
+    }
+    print(f"[wifi_set] {propname}={value}", flush=True)
+    r = requests.post(url, params=params, data=xml_body, headers=headers, timeout=10)
+    print(f"[wifi_set] status={r.status_code} body={r.text[:200]}", flush=True)
+    if r.status_code not in (200, 202):
+        raise Exception(f"set_camprop failed: HTTP {r.status_code}: {r.text[:100]}")
+    return r
+
+
 # ── CONNECTION ────────────────────────────────────────────────────────────────
 
 @app.route("/api/connect", methods=["POST"])
@@ -666,6 +778,15 @@ def api_connect():
                     return jsonify(ok=False, error="No camera found. Connect via USB in Raw/Control mode."), 200
                 wpd_id = r["device"]
                 cam = USBCameraProxy(wpd_id)
+                # Use the friendly name from WPD if available, normalize spacing
+                if r.get("model"):
+                    name = r["model"].strip()
+                    # Fix common WPD name issues: "OM-1MarkII" → "OM-1 Mark II"
+                    import re
+                    name = re.sub(r'(OM-\d+(?:Mark|mk))', lambda m: m.group(0), name)
+                    name = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)  # camelCase → spaced
+                    name = re.sub(r'(Mark)(\w)', r'\1 \2', name)      # MarkII → Mark II
+                    cam.model = name
                 camera_client = cam
                 camera_info   = {"model": cam.model, "firmware": cam.firmware, "method": "usb"}
                 return jsonify(ok=True, model=cam.model, firmware=cam.firmware)
@@ -748,13 +869,84 @@ def api_probe():
                     "access":         "getset" if access == "getset" else "getonly",
                     "current_value":  current,
                     "allowed_values": allowed,
+                    "value_labels":   WBVALUE_LABELS if name == "wbvalue" else None,
                 })
+            seen = set()
+            controls = [c for c in controls if not (c['name'] in seen or seen.add(c['name']))]
+
+            # Fetch last shot EXIF for exposure triangle (SS, aperture, expcomp, WB)
+            exif_values = {}
+            try:
+                import io as _io
+                from PIL import Image
+                from PIL.ExifTags import TAGS
+
+                # getlastjpg returns the last captured JPEG directly
+                jpg_resp = camera_client.send_command('exec_takemisc', com='getlastjpg')
+                img = Image.open(_io.BytesIO(jpg_resp.content))
+                exif_raw = img._getexif() or {}
+                exif = {TAGS.get(k, k): v for k, v in exif_raw.items()}
+
+                def rational_to_str(v):
+                    try:
+                        if hasattr(v, 'numerator'):
+                            return float(v.numerator) / float(v.denominator)
+                        if isinstance(v, tuple) and len(v) == 2:
+                            return float(v[0]) / float(v[1]) if v[1] else 0.0
+                        return float(v)
+                    except Exception:
+                        return 0.0
+
+                # Shutter speed → OPC format (e.g. "1/250" or "2")
+                et = exif.get('ExposureTime')
+                if et is not None:
+                    s = rational_to_str(et)
+                    if s > 0:
+                        if s < 1:
+                            exif_values['shutspeedvalue'] = f"1/{round(1/s)}"
+                        elif s == int(s):
+                            exif_values['shutspeedvalue'] = str(int(s))
+                        else:
+                            exif_values['shutspeedvalue'] = f"{s:.1f}"
+
+                # Aperture → OPC format matching camera values (e.g. "1.6", "8.0", "22")
+                fn = exif.get('FNumber')
+                if fn is not None:
+                    fnum = rational_to_str(fn)
+                    if fnum > 0:
+                        # Camera OPC uses one decimal for sub-10 values, integer for 10+
+                        if fnum < 10:
+                            exif_values['focalvalue'] = f"{fnum:.1f}"
+                        else:
+                            exif_values['focalvalue'] = str(int(round(fnum)))
+
+                # Exposure compensation → OPC format (e.g. "0", "+3", "-3")
+                eb = exif.get('ExposureBiasValue')
+                if eb is not None:
+                    ev = rational_to_str(eb)
+                    if abs(ev) < 0.01:
+                        exif_values['expcomp'] = "0"
+                    else:
+                        # OPC uses integer thirds: 0.3EV steps encoded as integers
+                        # Convert to thirds and round
+                        thirds = round(ev / (1/3))
+                        exif_values['expcomp'] = f"{thirds:+d}" if thirds != 0 else "0"
+
+            except Exception as ex_jpg:
+                print(f"[getlastjpg] failed: {ex_jpg}", flush=True)
+
+            # Merge EXIF values into controls — override current_value for exposure triangle
+            if exif_values:
+                for ctrl in controls:
+                    if ctrl['name'] in exif_values:
+                        ctrl['current_value'] = exif_values[ctrl['name']]
 
             return jsonify(
                 ok=True,
                 model=camera_info.get("model", "Unknown"),
                 firmware=camera_info.get("firmware", "unknown"),
                 controls=controls,
+                exif_source=bool(exif_values),
             )
         except Exception as e:
             return jsonify(ok=False, error=str(e)), 200
@@ -820,8 +1012,8 @@ def load_cheat_index():
         ordered   = sorted(cheats, key=lambda c: order_map.get(c["id"], len(custom_order)))
         is_custom = True
     else:
-        # Default: oldest first (ascending mtime)
-        ordered   = sorted(cheats, key=lambda c: c["mtime"])
+        # Default: newest first (descending mtime)
+        ordered   = sorted(cheats, key=lambda c: c["mtime"], reverse=True)
         is_custom = False
 
     # Remove mtime from output
@@ -859,6 +1051,33 @@ def api_cheat_detail(cheat_id):
         return jsonify(ok=False, error="Not found"), 404
     try:
         meta, controls = read_cheat(path)
+
+        # Inject IQ controls if not already present — allows WiFi cheats to
+        # have IQ set manually in View overlay before saving/loading via USB
+        existing_names = {c["name"] for c in controls}
+
+        IQ_CONTROLS = [
+            {
+                "name":           "usb_D0C7",
+                "label":          "Image Quality",
+                "access":         "getset",
+                "current_value":  None,
+                "allowed_values": [
+                    "Large Fine", "Large Normal", "Large Basic",
+                    "Medium Fine", "Medium Normal",
+                    "Small Fine", "Small Normal", "Small Basic",
+                    "RAW", "RAW+Large Fine", "RAW+Large Normal",
+                ],
+                "mtp_code":       0xD0C7,
+                "value_labels":   None,
+                "injected":       True,
+            },
+        ]
+
+        for ctrl in IQ_CONTROLS:
+            if ctrl["name"] not in existing_names:
+                controls.append(ctrl)
+
         return jsonify(ok=True, meta=meta, controls=controls)
     except Exception as e:
         return jsonify(ok=False, error=str(e)), 500
@@ -946,6 +1165,204 @@ def api_import_cheat():
     except Exception as e:
         return jsonify(ok=False, error=str(e)), 500
 
+# ── IMPORT JPEG → CHEAT ──────────────────────────────────────────────────────
+
+@app.route("/api/import_jpeg", methods=["POST"])
+def api_import_jpeg():
+    """Accept a JPEG, read its EXIF data, and save as a .cheat file."""
+    if "file" not in request.files:
+        return jsonify(ok=False, error="No file provided"), 400
+    f = request.files["file"]
+    filename = f.filename or "untitled.jpg"
+    if not filename.lower().endswith((".jpg", ".jpeg")):
+        return jsonify(ok=False, error="File must be a JPEG"), 400
+
+    try:
+        from PIL import Image
+        from PIL.ExifTags import TAGS
+        import io
+
+        raw_bytes = f.read()
+        img = Image.open(io.BytesIO(raw_bytes))
+        exif_raw = img._getexif() or {}
+
+        # Decode all EXIF tags
+        exif = {}
+        for tag_id, value in exif_raw.items():
+            tag = TAGS.get(tag_id, tag_id)
+            exif[tag] = value
+
+        # ── Extract standard cross-brand EXIF values ──────────────────────────
+
+        def rational_to_float(v):
+            """Convert EXIF rational (tuple or IFDRational) to float."""
+            try:
+                if hasattr(v, 'numerator'):
+                    return float(v.numerator) / float(v.denominator)
+                if isinstance(v, tuple) and len(v) == 2:
+                    return float(v[0]) / float(v[1]) if v[1] else 0.0
+                return float(v)
+            except Exception:
+                return 0.0
+
+        # Shutter speed
+        shutter_val = exif.get("ExposureTime")
+        shutter_str = None
+        if shutter_val is not None:
+            s = rational_to_float(shutter_val)
+            if s > 0:
+                if s < 1:
+                    denom = round(1 / s)
+                    shutter_str = f"1/{denom}"
+                elif s == int(s):
+                    shutter_str = f'{int(s)}"'
+                else:
+                    shutter_str = f'{s:.1f}"'
+
+        # Aperture
+        aperture_val = exif.get("FNumber")
+        aperture_str = None
+        if aperture_val is not None:
+            fnum = rational_to_float(aperture_val)
+            if fnum > 0:
+                aperture_str = f"f/{fnum:.1f}"
+
+        # ISO
+        iso_val = exif.get("ISOSpeedRatings")
+        iso_str = str(iso_val) if iso_val else None
+
+        # Exposure compensation
+        expcomp_val = exif.get("ExposureBiasValue")
+        expcomp_str = None
+        if expcomp_val is not None:
+            ev = rational_to_float(expcomp_val)
+            if abs(ev) < 0.01:
+                expcomp_str = "0.0"
+            else:
+                expcomp_str = f"{ev:+.1f}"
+
+        # Exposure program → shooting mode hint
+        exp_program = exif.get("ExposureProgram", 0)
+        program_map = {0:"Unknown", 1:"Manual", 2:"P", 3:"A", 4:"S",
+                       5:"Creative", 6:"Action", 7:"Portrait", 8:"Landscape"}
+        program_str = program_map.get(exp_program, "Unknown")
+
+        # Metering mode
+        metering = exif.get("MeteringMode", 0)
+        metering_map = {0:"Unknown", 1:"Average", 2:"Center weighted",
+                        3:"Spot", 4:"Multi-spot", 5:"Pattern", 6:"Partial"}
+        metering_str = metering_map.get(metering, "Unknown")
+
+        # White balance (auto/manual only from standard EXIF)
+        wb = exif.get("WhiteBalance", 0)
+        wb_str = "Auto" if wb == 0 else "Manual"
+
+        # Flash
+        flash = exif.get("Flash", 0)
+        flash_str = "Off" if (flash & 0x1) == 0 else "On"
+
+        # Focal length
+        fl_val = exif.get("FocalLength")
+        fl_str = None
+        if fl_val is not None:
+            fl = rational_to_float(fl_val)
+            if fl > 0:
+                fl_str = f"{fl:.0f}mm"
+
+        fl35_val = exif.get("FocalLengthIn35mmFilm")
+        fl35_str = f"{fl35_val}mm equiv." if fl35_val else None
+
+        # Camera info
+        make  = exif.get("Make", "").strip()
+        model = exif.get("Model", "").strip()
+        camera_str = f"{make} {model}".strip() or "Unknown camera"
+
+        capture_date = exif.get("DateTimeOriginal") or exif.get("DateTime") or ""
+
+        # Lens
+        lens_str = exif.get("LensModel", "").strip() or None
+
+        # ── Build controls list ───────────────────────────────────────────────
+
+        # Standard shutter speed allowed values
+        ss_allowed = ["1/8000","1/6400","1/5000","1/4000","1/3200","1/2500",
+                      "1/2000","1/1600","1/1250","1/1000","1/800","1/640",
+                      "1/500","1/400","1/320","1/250","1/200","1/160",
+                      "1/125","1/100","1/80","1/60","1/50","1/40","1/30",
+                      "1/25","1/20","1/15","1/13","1/10","1/8","1/6","1/5",
+                      "1/4","0.3\"","0.4\"","0.5\"","0.6\"","0.8\"",
+                      "1\"","1.3\"","1.6\"","2\"","2.5\"","3\"","4\"",
+                      "5\"","6\"","8\"","10\"","13\"","15\"","20\"",
+                      "25\"","30\"","60\""]
+        # Aperture allowed values f/1.0–f/22
+        ap_allowed = ["f/1.0","f/1.1","f/1.2","f/1.4","f/1.6","f/1.8",
+                      "f/2.0","f/2.2","f/2.5","f/2.8","f/3.2","f/3.5",
+                      "f/4.0","f/4.5","f/5.0","f/5.6","f/6.3","f/7.1",
+                      "f/8.0","f/9.0","f/10.0","f/11.0","f/13.0","f/14.0",
+                      "f/16.0","f/18.0","f/20.0","f/22.0"]
+        ec_allowed = ["-5.0","-4.0","-3.0","-2.0","-1.7","-1.3","-1.0",
+                      "-0.7","-0.3","0.0","+0.3","+0.7","+1.0","+1.3",
+                      "+1.7","+2.0","+3.0","+4.0","+5.0"]
+        iso_allowed = ["Auto","100","125","160","200","250","320","400",
+                       "500","640","800","1000","1250","1600","2000","2500",
+                       "3200","4000","5000","6400","12800","25600","51200","102400"]
+
+        def make_ctrl(name, label, current, allowed, access="getset"):
+            return {
+                "name": name, "label": label, "access": access,
+                "current_value": current, "allowed_values": allowed,
+                "mtp_code": None, "source": "exif"
+            }
+
+        controls = [
+            make_ctrl("shutspeedvalue", "Shutter Speed",        shutter_str,  ss_allowed),
+            make_ctrl("focalvalue",     "Aperture (f-stop)",    aperture_str, ap_allowed),
+            make_ctrl("isospeedvalue",  "ISO Speed",            iso_str,      iso_allowed),
+            make_ctrl("expcomp",        "Exposure Compensation",expcomp_str,  ec_allowed),
+            make_ctrl("wbvalue",        "White Balance",        wb_str,       ["Auto","Manual"], "getonly"),
+            make_ctrl("usb_D004",       "Metering Mode",        metering_str, list(metering_map.values()), "getonly"),
+        ]
+        # Append read-only info fields
+        if program_str != "Unknown":
+            controls.append(make_ctrl("takemode", "Exposure Program", program_str, [], "getonly"))
+        if flash_str:
+            controls.append(make_ctrl("usb_D005", "Flash", flash_str, ["Off","On/Fill"], "getonly"))
+        if fl_str:
+            controls.append(make_ctrl("focallength", "Focal Length", fl_str, [], "getonly"))
+        if fl35_str:
+            controls.append(make_ctrl("focallength35", "35mm Equivalent", fl35_str, [], "getonly"))
+        if lens_str:
+            controls.append(make_ctrl("lens", "Lens", lens_str, [], "getonly"))
+
+        # ── Build cheat name from filename ────────────────────────────────────
+        stem = Path(filename).stem  # filename without extension
+        notes_parts = [f"Camera: {camera_str}"]
+        if capture_date:
+            notes_parts.append(f"Captured: {capture_date}")
+        if lens_str:
+            notes_parts.append(f"Lens: {lens_str}")
+        notes = "\n".join(notes_parts)
+
+        # ── Save cheat ────────────────────────────────────────────────────────
+        probe_data = {
+            "model": camera_str,
+            "firmware": "EXIF import",
+            "controls": controls,
+        }
+        cheat_id, desc = _save_cheat(
+            category="Other",
+            description=stem,
+            notes=notes,
+            probe_data=probe_data,
+        )
+        return jsonify(ok=True, cheat_id=cheat_id, description=desc,
+                       camera=camera_str, properties=len(controls))
+
+    except ImportError:
+        return jsonify(ok=False, error="Pillow library not installed. Run: pip install Pillow"), 500
+    except Exception as e:
+        return jsonify(ok=False, error=str(e)), 500
+
 # ── SET UPLOAD PENDING ────────────────────────────────────────────────────────
 
 @app.route("/api/cheats/<cheat_id>/set_pending", methods=["POST"])
@@ -1003,20 +1420,9 @@ def api_open_cheats_folder():
 
 # ── SAVE CHEAT ────────────────────────────────────────────────────────────────
 
-@app.route("/api/save_cheat", methods=["POST"])
-def api_save_cheat():
-    body        = request.get_json(force=True)
-    category    = body.get("category", "").strip()
-    description = body.get("description", "").strip()
-    notes       = body.get("notes", "").strip()
-    probe_data  = body.get("probe_data", {})
 
-    if not category or not description:
-        return jsonify(ok=False, error="Category and description are required"), 400
-    if not probe_data or not probe_data.get("controls"):
-        return jsonify(ok=False, error="No probe data"), 400
-
-    # Check for duplicate descriptions — auto-suffix with (2), (3) etc.
+def _save_cheat(category, description, notes, probe_data):
+    """Core save logic — returns (cheat_id, final_description)."""
     existing_descriptions = set()
     for f in CHEATS_DIR.glob("*.cheat"):
         try:
@@ -1047,11 +1453,26 @@ def api_save_cheat():
         "upload_pending": False,
         "uploaded":       False,
     }
+    write_cheat(path, meta, probe_data["controls"])
+    return cheat_id, final_description
+
+
+@app.route("/api/save_cheat", methods=["POST"])
+def api_save_cheat():
+    body        = request.get_json(force=True)
+    category    = body.get("category", "").strip()
+    description = body.get("description", "").strip()
+    notes       = body.get("notes", "").strip()
+    probe_data  = body.get("probe_data", {})
+
+    if not category or not description:
+        return jsonify(ok=False, error="Category and description are required"), 400
+    if not probe_data or not probe_data.get("controls"):
+        return jsonify(ok=False, error="No probe data"), 400
 
     try:
-        write_cheat(path, meta, probe_data["controls"])
-        return jsonify(ok=True, cheat_id=cheat_id, filename=path.name,
-                       description=final_description)
+        cheat_id, final_description = _save_cheat(category, description, notes, probe_data)
+        return jsonify(ok=True, cheat_id=cheat_id, description=final_description)
     except Exception as e:
         return jsonify(ok=False, error=str(e)), 500
 
@@ -1074,7 +1495,12 @@ def api_update_cheat_meta(cheat_id):
             # Rewrite entire cheat with updated controls
             meta, _ = read_cheat(path)
             meta.update(updates)
-            write_cheat(path, meta, body["controls"])
+            # Strip injected flag before writing — keep all controls including unset ones
+            clean_controls = [
+                {k: v for k, v in ctrl.items() if k != "injected"}
+                for ctrl in body["controls"]
+            ]
+            write_cheat(path, meta, clean_controls)
         else:
             update_cheat_meta(path, updates)
         return jsonify(ok=True)
@@ -1208,6 +1634,11 @@ def api_apply_cheat():
             applied = 0
             skipped = 0
             errors  = []
+
+            is_usb = isinstance(camera_client, USBCameraProxy)
+            if not is_usb:
+                camera_client.send_command('switch_cammode', mode='rec', lvqty='0320x0240')
+
             for ctrl in controls:
                 if ctrl.get("access") == "getonly":
                     skipped += 1
@@ -1218,9 +1649,10 @@ def api_apply_cheat():
                     skipped += 1
                     continue
                 try:
-                    camera_client.send_command(
-                        'set_camprop', com='set',
-                        propname=name, value=str(value))
+                    if is_usb:
+                        camera_client.set_property(name, str(value))
+                    else:
+                        wifi_set_camprop(camera_client, name, value)
                     applied += 1
                 except Exception as e:
                     errors.append(f"{name}: {e}")
@@ -1263,7 +1695,8 @@ def api_apply_settings():
                         errors.append(f"{name}: {e}")
                         skipped += 1
             else:
-                # WiFi camera
+                # WiFi camera — ensure in rec mode first
+                camera_client.send_command('switch_cammode', mode='rec', lvqty='0320x0240')
                 for s in settings:
                     name  = s.get("name")
                     value = s.get("value")
@@ -1271,9 +1704,7 @@ def api_apply_settings():
                         skipped += 1
                         continue
                     try:
-                        camera_client.send_command(
-                            'set_camprop', com='set',
-                            propname=name, value=str(value))
+                        wifi_set_camprop(camera_client, name, value)
                         applied += 1
                     except Exception as e:
                         errors.append(f"{name}: {e}")

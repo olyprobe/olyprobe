@@ -283,11 +283,12 @@
 
   .cheat-card {
     border: 1px solid var(--rule); border-radius: 8px;
-    background: var(--paper); overflow: hidden;
+    background: var(--paper);
     display: flex; flex-direction: column;
-    cursor: pointer;
+    cursor: pointer; position: relative;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
+  .card-body { padding: 14px; flex: 1; overflow: hidden; }
   .cheat-card:hover {
     border-color: var(--accent-mid);
     box-shadow: 0 2px 12px rgba(45,90,61,0.08);
@@ -298,7 +299,6 @@
     background: var(--accent-mid);
   }
 
-  .card-body { padding: 14px; flex: 1; }
   .card-category {
     font-size: 10px; font-weight: 500; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--accent-mid);
@@ -339,6 +339,108 @@
     border-color: var(--accent-mid);
     box-shadow: 0 0 0 2px var(--accent-light);
   }
+
+  .hidden { display: none !important; }
+
+  /* Selection mode — controlled by body class */
+  body.select-active #btn-select  { display: none !important; }
+  body.select-active #select-bar  { display: flex !important; }
+  #select-bar { display: none; }
+
+  /* Selection mode */
+  .select-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px; background: var(--paper-2);
+    border-bottom: 1px solid var(--rule);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .select-bar-count { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .btn-danger {
+    padding: 6px 14px; font-size: 12px; font-weight: 500;
+    background: #c0392b; color: #fff; border: none;
+    border-radius: 4px; cursor: pointer; transition: background 0.15s;
+  }
+  .btn-danger:hover { background: #922b21; }
+  .btn-danger:disabled { background: #ccc; cursor: default; }
+
+  /* Cards in select mode */
+  .cheat-grid.select-mode .cheat-card {
+    cursor: pointer; user-select: none;
+  }
+  .cheat-grid.select-mode .cheat-card:hover {
+    border-color: var(--accent-mid);
+    box-shadow: 0 2px 12px rgba(45,90,61,0.12);
+  }
+  .cheat-grid.select-mode .cheat-card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-light);
+    background: #f0f7f0;
+  }
+  .cheat-grid.select-mode .card-actions { display: none; }
+  .cheat-grid.select-mode .card-upload-row { display: none; }
+  .card-select-check {
+    display: none; width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid var(--rule); background: var(--paper);
+    align-items: center; justify-content: center;
+    font-size: 11px; color: #fff; flex-shrink: 0;
+    pointer-events: none; transition: background 0.1s, border-color 0.1s;
+    /* Card view: sit in top-right corner via flex order trick */
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+  }
+  .cheat-grid.select-mode .card-select-check { display: flex; }
+  .cheat-card.selected .card-select-check { background: var(--accent); border-color: var(--accent); }
+  .cheat-card.selected .card-select-check::after { content: '✓'; }
+
+  /* List view: inline in row flow */
+  .cheat-grid.list-view .card-select-check {
+    position: static; margin: 0 4px 0 10px; align-self: center;
+    display: none; border-color: #aaa;
+  }
+  .cheat-grid.list-view.select-mode .card-select-check { display: flex; }
+  .src-badge {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 1px 5px; border-radius: 3px; vertical-align: middle;
+    margin-right: 3px;
+  }
+  .src-wifi { background: #e8f0f7; color: #2a5a8a; }
+  .src-usb  { background: #f0ede8; color: #7a4a1a; }
+  .src-exif { background: #f0f7e8; color: #3a6a1a; }
+
+  .view-toggle {
+    display: flex; gap: 0; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden;
+  }
+  .view-toggle-btn {
+    padding: 4px 9px; font-size: 14px; background: var(--paper-2);
+    border: none; cursor: pointer; color: var(--ink-3);
+    transition: background 0.1s, color 0.1s; line-height: 1;
+  }
+  .view-toggle-btn:first-child { border-right: 1px solid var(--rule); }
+  .view-toggle-btn.active { background: var(--accent); color: #fff; }
+
+  /* List view */
+  .cheat-grid.list-view {
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .cheat-grid.list-view .cheat-card {
+    flex-direction: row; border-radius: 0; border-bottom: none;
+    border-left: none; border-right: none;
+    align-items: center; min-height: 44px;
+  }
+  .cheat-grid.list-view .cheat-card:first-child { border-radius: 6px 6px 0 0; border-top: 1px solid var(--rule); }
+  .cheat-grid.list-view .cheat-card:last-child  { border-radius: 0 0 6px 6px; border-bottom: 1px solid var(--rule); }
+  .cheat-grid.list-view .cheat-card:first-child:last-child { border-radius: 6px; border: 1px solid var(--rule); }
+  .cheat-grid.list-view .card-color-band { width: 4px; height: auto; align-self: stretch; flex-shrink: 0; }
+  .cheat-grid.list-view .card-body {
+    padding: 8px 12px; flex: 1; display: flex; align-items: baseline;
+    gap: 10px; flex-direction: row;
+  }
+  .cheat-grid.list-view .card-category { margin: 0; flex-shrink: 0; width: 110px; }
+  .cheat-grid.list-view .card-desc { margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cheat-grid.list-view .card-meta { flex-direction: row; gap: 8px; flex-shrink: 0; }
+  .cheat-grid.list-view .card-upload-row { display: none; }
+  .cheat-grid.list-view .card-actions { flex-shrink: 0; padding: 0 8px; border-top: none; }
+  .cheat-grid.list-view .card-actions { display: flex; gap: 4px; }
 
   /* Reset order link */
   .reset-order-link {
@@ -981,8 +1083,8 @@
 
   <div class="header-connection">
     <div class="conn-toggle">
-      <button class="conn-toggle-btn active" id="btn-wifi" onclick="setConnMethod('wifi')">WiFi</button>
-      <button class="conn-toggle-btn" id="btn-usb" onclick="setConnMethod('usb')">USB</button>
+      <button class="conn-toggle-btn" id="btn-wifi" onclick="setConnMethod('wifi')" disabled>WiFi</button>
+      <button class="conn-toggle-btn" id="btn-usb"  onclick="setConnMethod('usb')"  disabled>USB</button>
     </div>
 
     <div class="conn-status" id="conn-status">
@@ -990,7 +1092,7 @@
       <span id="conn-status-text">No camera</span>
     </div>
 
-    <button class="btn-connect" id="btn-connect" onclick="toggleConnect()">Connect</button>
+    <button class="btn-connect" id="btn-connect" onclick="toggleConnect()">Find camera</button>
     <button class="btn-help" onclick="openHelp()" title="Help">?</button>
   </div>
 </header>
@@ -999,8 +1101,8 @@
 <div class="drop-overlay" id="drop-overlay">
   <div class="drop-overlay-inner">
     <div class="drop-overlay-icon">&#8659;</div>
-    <p class="drop-overlay-title">Drop to import</p>
-    <p class="drop-overlay-sub">Release to add this .cheat file to your library</p>
+    <p class="drop-overlay-title" id="drop-overlay-title">Drop to import</p>
+    <p class="drop-overlay-sub" id="drop-overlay-sub">Drop a .cheat file to import, or a JPEG to create a cheat from its EXIF data</p>
   </div>
 </div>
 
@@ -1015,7 +1117,16 @@
         <p class="view-subhead">Saved to <code id="folder-path">~/OlyProbe/Cheats/</code></p>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="view-toggle">
+          <button class="view-toggle-btn active" id="btn-view-cards" onclick="setLibraryView('cards')" title="Card view">&#9638;</button>
+          <button class="view-toggle-btn" id="btn-view-list"  onclick="setLibraryView('list')"  title="List view">&#9776;</button>
+        </div>
+        <div class="view-toggle">
+          <button class="view-toggle-btn active" id="btn-sort-newest" onclick="setLibrarySort('newest')" title="Newest first">&#8595;</button>
+          <button class="view-toggle-btn" id="btn-sort-oldest" onclick="setLibrarySort('oldest')" title="Oldest first">&#8593;</button>
+        </div>
         <button class="btn-secondary" id="btn-reset-order" onclick="resetOrder()" style="display:none">Reset order</button>
+        <button class="btn-secondary" id="btn-select" onclick="enterSelectMode()">&#9635; Select</button>
         <button class="btn-primary" id="btn-probe" onclick="startProbe()" disabled>
           <span>&#9679;</span> Probe camera
         </button>
@@ -1030,8 +1141,33 @@
       <button class="btn-sync-now" id="btn-sync-now" onclick="syncNow()" style="display:none">Sync now</button>
     </div>
 
+    <!-- Selection action bar -->
+    <div class="select-bar" id="select-bar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+          <input type="checkbox" id="chk-select-all" onchange="toggleSelectAll(this.checked)"
+                 style="width:16px;height:16px;cursor:pointer;">
+          <span>All</span>
+        </label>
+        <span class="select-bar-count" id="select-bar-count">0 selected</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-danger" id="btn-delete-selected" onclick="deleteSelected()" disabled>Delete selected</button>
+        <button class="btn-secondary" onclick="exitSelectMode()">Cancel</button>
+      </div>
+    </div>
+
     <div class="cheat-grid" id="cheat-grid">
       <!-- populated by JS -->
+    </div>
+
+    <!-- No camera instructions — shown briefly after failed Find camera -->
+    <div id="no-camera-note" style="display:none;margin:20px 0;padding:16px 20px;background:var(--paper-2);border:1px solid var(--rule);border-radius:6px;font-size:13px;color:var(--ink-2);line-height:1.7;">
+      <strong style="color:var(--ink);">No camera found.</strong> To connect:
+      <ul style="margin:8px 0 0 18px;">
+        <li><strong>USB:</strong> Connect the USB cable, then on the camera set USB mode to <em>Raw/Control</em>. Click <strong>Find camera</strong> again.</li>
+        <li><strong>WiFi:</strong> On the camera enable <em>Device Connection</em> WiFi mode. Connect your PC to the camera's WiFi hotspot, then click <strong>Find camera</strong> again.</li>
+      </ul>
     </div>
   </div>
 
@@ -1088,6 +1224,7 @@
         <div class="probe-state-icon">&#128247;</div>
         <p class="probe-state-title">Ready to probe</p>
         <p class="probe-state-body">Probing the connected camera collects its current settings and saves them in an OlyProbe .cheat file that can be edited, shared, and loaded into supported Olympus/OM cameras to automatically set them with the values in the .cheat file.</p>
+        <p class="probe-state-body" style="font-size:12px;color:var(--ink-3);margin-top:4px;"><strong>WiFi tip:</strong> For a complete capture including shutter speed, aperture, and exposure compensation — set up the camera, take a test shot, then connect via WiFi and probe. The exposure values will be read automatically from the last shot.</p>
         <button class="btn-primary" onclick="runProbe()" id="btn-run-probe">
           &#9679; Probe camera now
         </button>
@@ -1311,11 +1448,13 @@ window.addEventListener('load', function() {
     loadCheats();
     updateSyncBar();
     initTooltips();
+    autoDetect(); // scan for cameras on startup
   })
   .catch(function() {
     loadCheats();
     updateSyncBar();
     initTooltips();
+    autoDetect();
   });
   setInterval(updateSyncBar, 30000);
   setInterval(pollCompareSession, 3000);  // keep card indicators in sync with compare page
@@ -1356,19 +1495,19 @@ function showView(name) {
 
 // ── CONNECTION ────────────────────────────────────────────────
 function setConnMethod(method) {
+  // Only callable while connected — switches transport (forces disconnect first)
+  if (state.connStatus !== 'connected') return;
   state.connMethod = method;
   document.getElementById('btn-wifi').classList.toggle('active', method === 'wifi');
-  document.getElementById('btn-usb').classList.toggle('active', method === 'usb');
-  if (state.connStatus === 'connected') {
-    disconnectCamera();
-  }
+  document.getElementById('btn-usb').classList.toggle('active',  method === 'usb');
+  disconnectCamera();
 }
 
 function toggleConnect() {
   if (state.connStatus === 'connected') {
     disconnectCamera();
-  } else {
-    connectCamera();
+  } else if (state.connStatus !== 'connecting' && state.connStatus !== 'scanning') {
+    findAndConnect();
   }
 }
 
@@ -1377,51 +1516,183 @@ function setConnStatus(status, label) {
   var el = document.getElementById('conn-status');
   el.className = 'conn-status' + (status !== 'disconnected' ? ' ' + status : '');
   document.getElementById('conn-status-text').textContent = label;
-  var btn = document.getElementById('btn-connect');
-  btn.textContent = status === 'connected' ? 'Disconnect' : 'Connect';
-  btn.className = 'btn-connect' + (status === 'connected' ? ' disconnect' : '');
-  // Probe button: enabled only when connected, disabled after probe completes
-  var probeBtn = document.getElementById('btn-probe');
-  if (probeBtn) probeBtn.disabled = (status !== 'connected');
+
+  var connectBtn = document.getElementById('btn-connect');
+  var connected  = (status === 'connected');
+  var busy       = (status === 'scanning' || status === 'connecting');
+
+  connectBtn.textContent = connected ? 'Disconnect' : 'Find camera';
+  connectBtn.className   = 'btn-connect' + (connected ? ' disconnect' : '');
+  connectBtn.disabled    = busy;
+
+  // Transport toggle: only enabled when connected (to switch methods)
+  var wifiBtn = document.getElementById('btn-wifi');
+  var usbBtn  = document.getElementById('btn-usb');
+  wifiBtn.disabled = !connected;
+  usbBtn.disabled  = !connected;
+  wifiBtn.classList.toggle('active', connected && state.connMethod === 'wifi');
+  usbBtn.classList.toggle('active',  connected && state.connMethod === 'usb');
+
+  // Probe buttons
+  var probeBtn      = document.getElementById('btn-probe');
   var probeEmptyBtn = document.getElementById('btn-probe-empty');
-  if (probeEmptyBtn) probeEmptyBtn.disabled = (status !== 'connected');
-  // Update send-to-camera button
+  if (probeBtn)      probeBtn.disabled      = !connected;
+  if (probeEmptyBtn) probeEmptyBtn.disabled = !connected;
+
+  // Apply button
   var sendBtn = document.getElementById('btn-send-to-camera');
-  if (sendBtn) sendBtn.disabled = (status !== 'connected');
+  if (sendBtn) sendBtn.disabled = !connected;
+
+  if (connected) startHeartbeat();
+  else           stopHeartbeat();
 }
 
-function connectCamera() {
-  setConnStatus('connecting', 'Connecting...');
-  // Call Flask proxy: POST /api/connect  { method: wifi|usb }
+// ── AUTO-DETECT + CONNECT ─────────────────────────────────────────────────────
+
+function findAndConnect() {
+  setConnStatus('scanning', 'Scanning...');
+
+  // Step 1: Try USB
   fetch('/api/connect', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ method: state.connMethod })
+    body: JSON.stringify({ method: 'usb' })
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.ok) {
+      state.connMethod  = 'usb';
       state.cameraModel = data.model;
-      setConnStatus('connected', data.model || 'Camera connected');
-      toast('Connected to ' + (data.model || 'camera'));
-    } else {
-      setConnStatus('error', 'Not found');
-      toast('Could not connect — check camera is powered on and in tether mode');
+      setConnStatus('connected', data.model || 'USB Camera');
+      toast('Connected via USB: ' + (data.model || 'camera'));
+      return;
     }
+
+    // Step 2: USB not found — ping WiFi first before attempting full connect
+    setConnStatus('scanning', 'Checking WiFi...');
+    fetch('/api/detect')
+    .then(function(r2) { return r2.json(); })
+    .then(function(detect) {
+      if (!detect.wifi) {
+        // Nothing reachable — show instructions
+        setConnStatus('disconnected', 'No camera found');
+        showNoCamera();
+        return;
+      }
+      // WiFi camera is reachable — attempt full connect
+      setConnStatus('scanning', 'Connecting via WiFi...');
+      fetch('/api/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method: 'wifi' })
+      })
+      .then(function(r3) { return r3.json(); })
+      .then(function(wdata) {
+        if (wdata.ok) {
+          state.connMethod  = 'wifi';
+          state.cameraModel = wdata.model;
+          setConnStatus('connected', wdata.model || 'WiFi Camera');
+          toast('Connected via WiFi: ' + (wdata.model || 'camera'));
+        } else {
+          setConnStatus('disconnected', 'No camera found');
+          showNoCamera();
+        }
+      })
+      .catch(function() {
+        setConnStatus('disconnected', 'No camera found');
+        showNoCamera();
+      });
+    })
+    .catch(function() {
+      setConnStatus('disconnected', 'No camera found');
+      showNoCamera();
+    });
   })
   .catch(function() {
-    setConnStatus('error', 'Error');
-    toast('Connection failed');
+    setConnStatus('disconnected', 'No camera found');
+    showNoCamera();
   });
 }
 
+function showNoCamera() {
+  toast('No camera found — see instructions below', 5000);
+  // Show a brief instructional note in the library area
+  var note = document.getElementById('no-camera-note');
+  if (note) {
+    note.style.display = 'block';
+    setTimeout(function() { note.style.display = 'none'; }, 12000);
+  }
+}
+
+// ── HEARTBEAT ────────────────────────────────────────────────────────────────
+
+var _heartbeatTimer    = null;
+var _heartbeatFailCount = 0;
+
+function startHeartbeat() {
+  stopHeartbeat();
+  _heartbeatFailCount = 0;
+  _heartbeatTimer = setInterval(function() {
+    fetch('/api/heartbeat')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        _heartbeatFailCount = 0;
+      } else {
+        _heartbeatFailCount++;
+        if (_heartbeatFailCount >= 2) handleConnectionLost();
+      }
+    })
+    .catch(function() {
+      _heartbeatFailCount++;
+      if (_heartbeatFailCount >= 2) handleConnectionLost();
+    });
+  }, 8000);
+}
+
+function stopHeartbeat() {
+  if (_heartbeatTimer) { clearInterval(_heartbeatTimer); _heartbeatTimer = null; }
+  _heartbeatFailCount = 0;
+}
+
+function handleConnectionLost() {
+  stopHeartbeat();
+  fetch('/api/disconnect', { method: 'POST' }).catch(function() {});
+  state.cameraModel = null;
+  setConnStatus('error', 'Connection lost');
+  toast('Camera disconnected — click Find camera to reconnect');
+  setTimeout(function() {
+    if (state.connStatus === 'error') {
+      setConnStatus('disconnected', 'No camera');
+    }
+  }, 3000);
+}
+
+function connectCamera() { findAndConnect(); } // legacy alias
+
 function disconnectCamera() {
-  fetch('/api/disconnect', { method: 'POST' })
-  .catch(function() {})
-  .finally(function() {
-    state.cameraModel = null;
-    setConnStatus('disconnected', 'No camera');
-  });
+  stopHeartbeat();
+  fetch('/api/disconnect', { method: 'POST' }).catch(function() {});
+  state.cameraModel = null;
+  state.connMethod  = 'wifi'; // reset
+  setConnStatus('disconnected', 'No camera');
+}
+
+// ── STARTUP DETECT ────────────────────────────────────────────────────────────
+
+function autoDetect() {
+  // On startup, just do a quiet USB scan — don't try WiFi (user may not be on camera network)
+  fetch('/api/detect')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.usb) {
+      toast('USB camera detected — click Find camera to connect');
+    } else if (data.wifi) {
+      toast('WiFi camera detected — click Find camera to connect');
+    }
+    // Either way, Connect button is already enabled — nothing else to do
+  })
+  .catch(function() {});
 }
 
 // ── LIBRARY ───────────────────────────────────────────────────
@@ -1458,13 +1729,151 @@ var CAT_COLORS = {
   'Street':             '#5a4a2d',
 };
 
+function sourceBadge(firmware) {
+  if (!firmware || firmware === '') return '<span class="src-badge src-wifi">WiFi</span>';
+  if (firmware === 'USB')          return '<span class="src-badge src-usb">USB</span>';
+  if (firmware === 'EXIF import')  return '<span class="src-badge src-exif">EXIF</span>';
+  return '<span class="src-badge src-wifi">WiFi</span>';
+}
+
 function catColor(cat) {
   return CAT_COLORS[cat] || '#6a6a60';
 }
 
+var _selectMode = false;
+var _selectedIds = new Set();
+
+function enterSelectMode() {
+  _selectMode = true;
+  _selectedIds = new Set();
+  document.body.classList.add('select-active');
+  var grid = document.getElementById('cheat-grid');
+  grid.classList.add('select-mode');
+  updateSelectBar();
+  Array.from(grid.querySelectorAll('.cheat-card')).forEach(function(card) {
+    card.addEventListener('click', onSelectCardClick);
+  });
+}
+
+function exitSelectMode() {
+  _selectMode = false;
+  _selectedIds = new Set();
+  document.body.classList.remove('select-active');
+  var grid = document.getElementById('cheat-grid');
+  grid.classList.remove('select-mode');
+  Array.from(grid.querySelectorAll('.cheat-card')).forEach(function(card) {
+    card.classList.remove('selected');
+    card.removeEventListener('click', onSelectCardClick);
+  });
+}
+
+function onSelectCardClick(e) {
+  var card = e.currentTarget;
+  var id = card.dataset.id;
+  if (_selectedIds.has(id)) {
+    _selectedIds.delete(id);
+    card.classList.remove('selected');
+  } else {
+    _selectedIds.add(id);
+    card.classList.add('selected');
+  }
+  updateSelectBar();
+}
+
+function toggleSelectAll(checked) {
+  var grid = document.getElementById('cheat-grid');
+  Array.from(grid.querySelectorAll('.cheat-card')).forEach(function(card) {
+    var id = card.dataset.id;
+    if (checked) {
+      _selectedIds.add(id);
+      card.classList.add('selected');
+    } else {
+      _selectedIds.delete(id);
+      card.classList.remove('selected');
+    }
+  });
+  updateSelectBar();
+}
+
+function updateSelectBar() {
+  var n = _selectedIds.size;
+  var total = document.querySelectorAll('.cheat-card').length;
+  document.getElementById('select-bar-count').textContent =
+    n === 0 ? 'Select cheats to delete' :
+    n === 1 ? '1 selected' : n + ' selected';
+  document.getElementById('btn-delete-selected').disabled = n === 0;
+  // Sync select-all checkbox state
+  var chkAll = document.getElementById('chk-select-all');
+  if (chkAll) {
+    chkAll.checked       = n > 0 && n === total;
+    chkAll.indeterminate = n > 0 && n < total;
+  }
+}
+
+function deleteSelected() {
+  var ids = Array.from(_selectedIds);
+  if (ids.length === 0) return;
+  var msg = ids.length === 1
+    ? 'Delete 1 cheat? This cannot be undone.'
+    : 'Delete ' + ids.length + ' cheats? This cannot be undone.';
+  if (!confirm(msg)) return;
+
+  var done = 0;
+  ids.forEach(function(id) {
+    fetch('/api/cheats/' + encodeURIComponent(id), { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function() {
+      done++;
+      if (done === ids.length) {
+        exitSelectMode();
+        loadCheats();
+        toast('Deleted ' + ids.length + ' cheat' + (ids.length > 1 ? 's' : ''));
+      }
+    })
+    .catch(function() {
+      done++;
+      if (done === ids.length) { exitSelectMode(); loadCheats(); }
+    });
+  });
+}
+
+// Exit select mode on Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && _selectMode) exitSelectMode();
+});
+var _librarySort = localStorage.getItem('olyprobe_sort') || 'newest';
+var _libraryView = localStorage.getItem('olyprobe_view') || 'cards';
+
+function setLibraryView(view) {
+  _libraryView = view;
+  try { localStorage.setItem('olyprobe_view', view); } catch(e) {}
+  var grid = document.getElementById('cheat-grid');
+  if (grid) grid.classList.toggle('list-view', view === 'list');
+  document.getElementById('btn-view-cards').classList.toggle('active', view === 'cards');
+  document.getElementById('btn-view-list').classList.toggle('active', view === 'list');
+}
+
+function setLibrarySort(sort) {
+  _librarySort = sort;
+  try { localStorage.setItem('olyprobe_sort', sort); } catch(e) {}
+  document.getElementById('btn-sort-newest').classList.toggle('active', sort === 'newest');
+  document.getElementById('btn-sort-oldest').classList.toggle('active', sort === 'oldest');
+  renderLibrary();
+}
+
 function renderLibrary() {
+  if (_selectMode) exitSelectMode(); // only reset if mid-selection
   var grid = document.getElementById('cheat-grid');
   grid.innerHTML = '';
+  grid.classList.toggle('list-view', _libraryView === 'list');
+  document.getElementById('btn-view-cards').classList.toggle('active', _libraryView === 'cards');
+  document.getElementById('btn-view-list').classList.toggle('active', _libraryView === 'list');
+  document.getElementById('btn-sort-newest').classList.toggle('active', _librarySort === 'newest');
+  document.getElementById('btn-sort-oldest').classList.toggle('active', _librarySort === 'oldest');
+
+  // Apply client-side sort (server returns newest-first by default)
+  var cheats = state.cheats.slice();
+  if (_librarySort === 'oldest') cheats.reverse();
 
   // Show/hide reset order link
   var resetBtn = document.getElementById('btn-reset-order');
@@ -1481,7 +1890,7 @@ function renderLibrary() {
     return;
   }
 
-  state.cheats.forEach(function(c) {
+  cheats.forEach(function(c) {
     var card = document.createElement('div');
     card.className = 'cheat-card';
     card.draggable = true;
@@ -1506,6 +1915,7 @@ function renderLibrary() {
     }
 
     card.innerHTML =
+      '<div class="card-select-check"></div>' +
       '<div class="card-color-band" style="background:' + catColor(c.category) + '"></div>' +
       '<div class="card-body" style="position:relative">' +
         (c.notes ? buildNotesTooltip(c.notes, c.description) : '') +
@@ -1513,7 +1923,7 @@ function renderLibrary() {
         '<p class="card-category" style="color:' + catColor(c.category) + '">' + esc(c.category) + '</p>' +
         '<p class="card-desc">' + esc(c.description) + '</p>' +
         '<div class="card-meta">' +
-          '<span>' + esc(c.camera_model || 'Unknown camera') + '</span>' +
+          '<span>' + sourceBadge(c.firmware) + ' ' + esc(c.camera_model || 'Unknown camera') + '</span>' +
           '<span>' + esc(c.captured_at ? c.captured_at.slice(0,10) : '') + '</span>' +
         '</div>' +
       '</div>' +
@@ -1634,7 +2044,9 @@ function buildCompatSection(type, label, items) {
       // Dropdown pre-selected to source value, user can change
       html += '<select class="compat-select" id="compat_' + esc(item.name) + '" onchange="updateLoadModalSummary(loadModalData)">';
       (item.allowed || []).forEach(function(v) {
-        html += '<option value="' + esc(v) + '"' + (v === item.source_value ? ' selected' : '') + '>' + esc(v) + '</option>';
+        var lbl = (item.name === 'focalvalue' && !String(v).startsWith('f/')) ? 'f/'+v :
+                  (item.value_labels && item.value_labels[String(v)]) ? item.value_labels[String(v)] : v;
+        html += '<option value="' + esc(v) + '"' + (v === item.source_value ? ' selected' : '') + '>' + esc(lbl) + '</option>';
       });
       html += '</select>';
     } else if (type === 'no-match') {
@@ -1642,7 +2054,9 @@ function buildCompatSection(type, label, items) {
       html += '<select class="compat-select" id="compat_' + esc(item.name) + '" onchange="updateLoadModalSummary(loadModalData)">' +
         '<option value="">Leave unchanged</option>';
       (item.allowed || []).forEach(function(v) {
-        html += '<option value="' + esc(v) + '">' + esc(v) + '</option>';
+        var lbl2 = (item.name === 'focalvalue' && !String(v).startsWith('f/')) ? 'f/'+v :
+                   (item.value_labels && item.value_labels[String(v)]) ? item.value_labels[String(v)] : v;
+        html += '<option value="' + esc(v) + '">' + esc(lbl2) + '</option>';
       });
       html += '</select>';
     } else {
@@ -2150,6 +2564,8 @@ function startProbe() {
 }
 
 function runProbe() {
+  var runBtn = document.getElementById('btn-run-probe');
+  if (runBtn) runBtn.disabled = true;
   document.getElementById('probe-idle-state').style.display = 'none';
   document.getElementById('probe-running-state').style.display = 'block';
   var logEl = document.getElementById('probe-log');
@@ -2171,11 +2587,17 @@ function runProbe() {
     if (!data.ok) {
       plog('Probe failed: ' + (data.error || 'unknown error'), 'log-err');
       document.getElementById('probe-idle-state').style.display = 'block';
+      var runBtn2 = document.getElementById('btn-run-probe');
+      if (runBtn2) runBtn2.disabled = false;
       return;
     }
     state.probeData = data;
     plog('Connected: ' + data.model, 'log-ok');
     plog('Probe complete — ' + data.controls.length + ' controls captured', 'log-ok');
+    if (data.exif_source) {
+      plog('ℹ Shutter speed, aperture and exposure compensation read from last shot EXIF', 'log-dim');
+      document.getElementById('probe-log').style.display = 'block';
+    }
 
     var isUsb = (data.method === 'usb');
     var physicalNames = {expcomp:1, shutspeedvalue:1, focalvalue:1};
@@ -2341,8 +2763,15 @@ function renderControls(containerId, controls, editable) {
         var isCurrent = v === ctrl.current_value && ctrl.current_value !== null;
         var safeVal = String(v).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         var cls = 'value-chip' + (isCurrent ? ' current-value' : '') + (isEditable ? ' editable-chip' : '');
+        // Display formatters — show friendly labels, store raw values
+        var displayLabel = v;
+        if (ctrl.name === 'focalvalue' && !String(v).startsWith('f/')) {
+          displayLabel = 'f/' + v;
+        } else if (ctrl.value_labels && ctrl.value_labels[String(v)]) {
+          displayLabel = ctrl.value_labels[String(v)];
+        }
         return '<span class="' + cls + '" data-prop="' + safeProp + '" data-value="' + safeVal + '">' +
-               esc(String(v)) + '</span>';
+               esc(String(displayLabel)) + '</span>';
       }).join('');
 
       html +=
@@ -2354,7 +2783,13 @@ function renderControls(containerId, controls, editable) {
           '</div>' +
           '<div class="ctrl-cell">' +
             '<span class="ctrl-value' + (readOnly ? ' readonly' : '') + '">' +
-              esc(ctrl.current_value !== null && ctrl.current_value !== undefined ? String(ctrl.current_value) : '—') +
+              (function() {
+                var cv = ctrl.current_value;
+                if (cv === null || cv === undefined) return '—';
+                if (ctrl.name === 'focalvalue' && !String(cv).startsWith('f/')) return 'f/' + cv;
+                if (ctrl.value_labels && ctrl.value_labels[String(cv)]) return esc(ctrl.value_labels[String(cv)]);
+                return esc(String(cv));
+              })() +
             '</span>' +
           '</div>' +
           '<div class="ctrl-cell"><div class="ctrl-values">' +
@@ -2510,7 +2945,6 @@ function updateSyncBar() {
   var dragCounter = 0;
 
   document.addEventListener('dragenter', function(e) {
-    // Don't show file import overlay during internal card reorder
     if (dragSrcId) return;
     var hasFile = Array.from(e.dataTransfer.items || []).some(function(item) {
       return item.kind === 'file';
@@ -2536,47 +2970,51 @@ function updateSyncBar() {
     e.preventDefault();
     dragCounter = 0;
     dropOverlay.classList.remove('active');
-
-    // Ignore internal card reorder drags
     if (dragSrcId) return;
 
-    var files = Array.from(e.dataTransfer.files).filter(function(f) {
-      return f.name.endsWith('.cheat');
-    });
+    try {
+      var allFiles = Array.from(e.dataTransfer.files);
+      console.log('Drop: files=', allFiles.length, allFiles.map(function(f){return f.name+' ('+f.type+')';}));
+      var cheats   = allFiles.filter(function(f) { return f.name.toLowerCase().endsWith('.cheat'); });
+      var jpegs    = allFiles.filter(function(f) { return /\.(jpg|jpeg)$/i.test(f.name); });
+      console.log('cheats=', cheats.length, 'jpegs=', jpegs.length);
+      var other    = allFiles.filter(function(f) { return !f.name.toLowerCase().endsWith('.cheat') && !/\.(jpg|jpeg)$/i.test(f.name); });
 
-    if (files.length === 0) {
-      toast('Please drop a .cheat file');
-      return;
-    }
+      if (allFiles.length === 0) return;
+      if (cheats.length === 0 && jpegs.length === 0) {
+        toast('Please drop a .cheat or JPEG file');
+        return;
+      }
 
-    var imported = 0;
-    var failed   = 0;
-
-    files.forEach(function(file) {
-      var formData = new FormData();
-      formData.append('file', file);
-      fetch('/api/import_cheat', { method: 'POST', body: formData })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (data.ok) {
-          imported++;
-          if (imported + failed === files.length) {
-            toast('Imported ' + imported + ' cheat' + (imported > 1 ? 's' : ''));
-            loadCheats();
-          }
-        } else if (data.duplicate) {
-          toast(data.error || 'Already in library');
-          failed++;
-        } else {
-          failed++;
-          toast('Import failed: ' + (data.error || 'unknown error'));
-        }
-      })
-      .catch(function() {
-        failed++;
-        toast('Import failed');
+      cheats.forEach(function(file) {
+        var formData = new FormData();
+        formData.append('file', file);
+        fetch('/api/import_cheat', { method: 'POST', body: formData })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) { toast('Imported: ' + file.name); loadCheats(); }
+          else if (data.duplicate) { toast('Already in library: ' + file.name); }
+          else { toast('Import failed: ' + (data.error || 'unknown')); }
+        })
+        .catch(function() { toast('Import failed: ' + file.name); });
       });
-    });
+
+      jpegs.forEach(function(file) {
+        var formData = new FormData();
+        formData.append('file', file);
+        fetch('/api/import_jpeg', { method: 'POST', body: formData })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) { toast('Cheat created from: ' + file.name); loadCheats(); }
+          else { toast('EXIF import failed: ' + (data.error || 'unknown')); }
+        })
+        .catch(function() { toast('EXIF import failed: ' + file.name); });
+      });
+
+    } catch(err) {
+      console.error('Drop handler error:', err);
+      toast('Drop failed: ' + err.message);
+    }
   });
 })();
 
@@ -2609,13 +3047,16 @@ function initDragDrop() {
 
   grid.addEventListener('dragover', function(e) {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    var card = e.target.closest('.cheat-card');
-    if (!card || card.dataset.id === dragSrcId) return;
-    document.querySelectorAll('.cheat-card.drag-over').forEach(function(c) {
-      c.classList.remove('drag-over');
-    });
-    card.classList.add('drag-over');
+    // Only set move effect for internal card reorders
+    if (dragSrcId) {
+      e.dataTransfer.dropEffect = 'move';
+      var card = e.target.closest('.cheat-card');
+      if (!card || card.dataset.id === dragSrcId) return;
+      document.querySelectorAll('.cheat-card.drag-over').forEach(function(c) {
+        c.classList.remove('drag-over');
+      });
+      card.classList.add('drag-over');
+    }
   });
 
   grid.addEventListener('dragleave', function(e) {
@@ -2624,10 +3065,12 @@ function initDragDrop() {
   });
 
   grid.addEventListener('drop', function(e) {
+    // Only handle internal card reorders — external file drops bubble to document
+    if (!dragSrcId) return;
     e.preventDefault();
     e.stopPropagation();
     var targetCard = e.target.closest('.cheat-card');
-    if (!targetCard || !dragSrcId || targetCard.dataset.id === dragSrcId) return;
+    if (!targetCard || targetCard.dataset.id === dragSrcId) return;
     targetCard.classList.remove('drag-over');
 
     var tgtIdx = state.cheats.findIndex(function(c) { return c.id === targetCard.dataset.id; });
@@ -2969,11 +3412,11 @@ function closeDialog() {
 }
 
 // ── UTILS ─────────────────────────────────────────────────────
-function toast(msg) {
+function toast(msg, duration) {
   var el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(function() { el.classList.remove('show'); }, 3000);
+  setTimeout(function() { el.classList.remove('show'); }, duration || 3000);
 }
 
 function esc(s) {

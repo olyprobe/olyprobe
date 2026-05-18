@@ -284,6 +284,15 @@ delegate int AddPVDelegate(IntPtr pThis, IntPtr pv);
 delegate int GetCollCountFn(IntPtr pThis, out uint count);
 [UnmanagedFunctionPointer(CallingConvention.StdCall)]
 delegate int GetCollAtFn(IntPtr pThis, uint index, IntPtr pv);
+[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+delegate int EnumNextFn(IntPtr pThis, uint cObjects,
+    [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType=UnmanagedType.LPWStr, SizeParamIndex=1)]
+    string[] rgObjectIDs, out uint pcFetched);
+[UnmanagedFunctionPointer(CallingConvention.StdCall)]
+delegate int GetStreamFn(IntPtr pThis,
+    [MarshalAs(UnmanagedType.LPWStr)] string objId,
+    IntPtr pKey, uint mode, out uint bufSize,
+    [MarshalAs(UnmanagedType.IUnknown)] out object ppStream);
 
 // ── Main Program ─────────────────────────────────────────────────────────────
 
@@ -477,7 +486,20 @@ class Program {
             if(cmd!="rawmtp") Console.Error.WriteLine("wpdId="+wpdId);
 
             if(cmd=="list") {
-                Console.WriteLine("{\"ok\":true,\"device\":\""+Esc(wpdId)+"\"}");
+                // Get friendly name from WPD manager
+                string friendlyName = "";
+                try {
+                    var mgr2=(IPortableDeviceManager)CreateObj(
+                        "0AF10CEC-2ECD-4B92-9581-34F6AE0637F3",
+                        "A1567595-4C2F-4574-A6FA-ECEF917B9A40");
+                    uint nameLen = 256;
+                    IntPtr pName = Marshal.AllocCoTaskMem((int)(nameLen * 2));
+                    mgr2.GetDeviceFriendlyName(wpdId, pName, ref nameLen);
+                    friendlyName = Marshal.PtrToStringUni(pName);
+                    Marshal.FreeCoTaskMem(pName);
+                } catch {}
+                Console.Error.WriteLine("model="+friendlyName);
+                Console.WriteLine("{\"ok\":true,\"device\":\""+Esc(wpdId)+"\",\"model\":\""+Esc(friendlyName)+"\"}");
 
             } else if(cmd=="get") {
                 var ci=MakeClientInfo();
@@ -737,7 +759,112 @@ class Program {
                 CloseDeviceRaw(pDev);
                 Console.WriteLine(sb.ToString());
 
-            } else {
+            } else if(cmd=="getlatest") {
+                // Find and return the most recent JPEG on the camera card via WPD
+                var ci=MakeClientInfo();
+                IntPtr pDev=OpenDeviceRaw(wpdId,ci);
+                object devObj=Marshal.GetObjectForIUnknown(pDev);
+                var dev=(IPortableDevice)devObj;
+                object contentObj; dev.Content(out contentObj);
+                var content=(IPortableDeviceContent)contentObj;
+                object propsObj; content.Properties(out propsObj);
+                var props=(IPortableDeviceProperties)propsObj;
+
+                string WPD_OBJ = "EF6B490D-5CD8-437A-AFFC-DA8B60EE4A3C";
+                string latestId=null, latestName=null, latestDate="";
+
+                var stack=new System.Collections.Generic.Stack<string>();
+                stack.Push("DEVICE");
+
+                while(stack.Count>0) {
+                    string parentId=stack.Pop();
+                    object enumObj;
+                    try { content.EnumObjects(0,parentId,null,out enumObj); } catch { continue; }
+                    IntPtr pEnum=Marshal.GetIUnknownForObject(enumObj);
+                    IntPtr vtEnum=Marshal.ReadIntPtr(pEnum);
+                    var nextFn=(EnumNextFn)Marshal.GetDelegateForFunctionPointer(
+                        Marshal.ReadIntPtr(vtEnum,3*IntPtr.Size),typeof(EnumNextFn));
+                    string[] batch=new string[32];
+                    uint fetched=0;
+                    while(true) {
+                        int hr2=nextFn(pEnum,(uint)batch.Length,batch,out fetched);
+                        if(fetched==0) break;
+                        for(uint bi=0;bi<fetched;bi++) {
+                            string objId=batch[bi];
+                            if(string.IsNullOrEmpty(objId)) continue;
+                            IntPtr kName=MK(WPD_OBJ,12), kDate=MK(WPD_OBJ,18);
+                            object kcObj=CreateObj("DE2D022D-2480-43BE-97F0-D1FA2CF98F4F",
+                                                   "DADA2357-E0AD-492E-98DB-DD61C53BA353");
+                            var kc=(IPortableDeviceKeyCollection)kcObj;
+                            kc.Add(kName); kc.Add(kDate);
+                            Marshal.FreeHGlobal(kName); Marshal.FreeHGlobal(kDate);
+                            try {
+                                object vObj; props.GetValues(objId,kc,out vObj);
+                                var ov=(IPortableDeviceValues)vObj;
+                                string fname="",fdate="";
+                                try { IntPtr k=MK(WPD_OBJ,12); ov.GetStringValue(k,out fname); Marshal.FreeHGlobal(k); } catch{}
+                                try { IntPtr k=MK(WPD_OBJ,18); ov.GetStringValue(k,out fdate); Marshal.FreeHGlobal(k); } catch{}
+                                Console.Error.WriteLine("Object: id="+objId+" name='"+fname+"' date="+fdate);
+                                if(fname.ToUpper().EndsWith(".JPG")||fname.ToUpper().EndsWith(".JPEG")||
+                                   fname.ToUpper().EndsWith(".ORF")||fname.ToUpper().EndsWith(".RAF")) {
+                                    Console.Error.WriteLine("JPEG/RAW: "+fname+" "+fdate);
+                                    if(fname.ToUpper().EndsWith(".JPG")||fname.ToUpper().EndsWith(".JPEG")) {
+                                        if(string.Compare(fdate,latestDate)>=0) {
+                                            latestId=objId; latestName=fname; latestDate=fdate;
+                                        }
+                                    }
+                                } else {
+                                    // Push everything that might be a container
+                                    stack.Push(objId);
+                                }
+                            } catch(Exception exObj) {
+                                Console.Error.WriteLine("Object err: "+objId+" "+exObj.Message);
+                                stack.Push(objId); // try anyway
+                            }
+                        }
+                        if(hr2!=0) break;
+                    }
+                    Marshal.Release(pEnum);
+                }
+
+                if(latestId==null) {
+                    CloseDeviceRaw(pDev);
+                    Console.WriteLine("{\"ok\":false,\"error\":\"No JPEG found on camera card\"}");
+                } else {
+                    Console.Error.WriteLine("Latest JPEG: "+latestName+" id="+latestId);
+                    // Stream the file
+                    object resObj; content.Transfer(out resObj);
+                    IntPtr pRes=Marshal.GetIUnknownForObject(resObj);
+                    IntPtr vtRes=Marshal.ReadIntPtr(pRes);
+                    var gsf=(GetStreamFn)Marshal.GetDelegateForFunctionPointer(
+                        Marshal.ReadIntPtr(vtRes,3*IntPtr.Size),typeof(GetStreamFn));
+                    IntPtr kRes=MK("E81E79BE-34F0-41BF-B53F-F1A06AE87842",0);
+                    object streamObj; uint bufSz=0;
+                    int hrS=gsf(pRes,latestId,kRes,0,out bufSz,out streamObj);
+                    Marshal.FreeHGlobal(kRes); Marshal.Release(pRes);
+                    if(hrS!=0||streamObj==null) {
+                        CloseDeviceRaw(pDev);
+                        Console.WriteLine("{\"ok\":false,\"error\":\"Stream open failed hr=0x"+hrS.ToString("X")+"\"}");
+                    } else {
+                        var ms=new System.IO.MemoryStream();
+                        var iStream=(System.Runtime.InteropServices.ComTypes.IStream)streamObj;
+                        byte[] buf=new byte[Math.Max(bufSz,65536)];
+                        IntPtr pRead=Marshal.AllocHGlobal(IntPtr.Size);
+                        while(true) {
+                            iStream.Read(buf,buf.Length,pRead);
+                            int n=Marshal.ReadInt32(pRead);
+                            if(n<=0) break;
+                            ms.Write(buf,0,n);
+                        }
+                        Marshal.FreeHGlobal(pRead);
+                        byte[] img=ms.ToArray();
+                        Console.Error.WriteLine("Read "+img.Length+" bytes from "+latestName);
+                        CloseDeviceRaw(pDev);
+                        Console.WriteLine("{\"ok\":true,\"filename\":\""+Esc(latestName)+"\",\"size\":"+img.Length+",\"data\":\""+Convert.ToBase64String(img)+"\"}");
+                    }
+                }
+
+
                 Console.WriteLine("{\"ok\":false,\"error\":\"Unknown cmd: "+cmd+"\"}");
             }
         } catch(Exception ex) {
@@ -882,23 +1009,21 @@ if __name__ == "__main__":
     if not r.get("ok"): exit()
 
     print()
-    print("Step 2: Probe IOCTL codes on USB device interface...")
-    r2 = _bridge(["probeioctls"])
-    print(f"  {r2}")
-    r2 = send_raw_mtp(0x9486)
-    print(f"  ok={r2.get('ok')} returned={r2.get('returned', 0)} bytes")
-
-    if r2.get("ok") and r2.get("data"):
-        data_bytes = base64.b64decode(r2["data"])
-        print(f"  Raw first 32 bytes: {data_bytes[:32].hex()}")
-        props = parse_9486_response(r2["data"])
-        print(f"  Parsed {len(props)} property descriptors")
-        for code in [0xD002, 0xD01C, 0xD008]:
-            if code in props:
-                raw = props[code]
-                val = decode_value(code, raw)
-                print(f"  0x{code:04X}: raw={raw.hex()} decoded={val}")
-            else:
-                print(f"  0x{code:04X}: not found")
+    print("Step 2: Get latest JPEG from camera card...")
+    r2 = _bridge(["getlatest"])
+    if r2.get("ok"):
+        import base64, io
+        print(f"  Found: {r2['filename']} ({r2['size']} bytes)")
+        # Parse EXIF
+        try:
+            from PIL import Image
+            img_data = base64.b64decode(r2["data"])
+            img = Image.open(io.BytesIO(img_data))
+            exif = img._getexif() or {}
+            from PIL.ExifTags import TAGS
+            decoded = {TAGS.get(k,k): v for k,v in exif.items()}
+            print(f"  SS: {decoded.get('ExposureTime')} f/{decoded.get('FNumber')} ISO:{decoded.get('ISOSpeedRatings')} EV:{decoded.get('ExposureBiasValue')}")
+        except Exception as ex:
+            print(f"  EXIF parse error: {ex}")
     else:
-        print(f"  Error: {r2.get('error', 'unknown')}")
+        print(f"  Error: {r2.get('error','unknown')}")

@@ -663,6 +663,11 @@ function exportCSV() {
   var cheats   = state.cheats;
   if (cheats.length === 0) { toast('Nothing to export'); return; }
 
+  var filename = prompt('Export filename:', 'olyprobe-comparison');
+  if (filename === null) return;  // cancelled
+  filename = filename.trim() || 'olyprobe-comparison';
+  if (!filename.endsWith('.csv')) filename += '.csv';
+
   // Build unified property list
   var propMap = {};
   cheats.forEach(function(cheat) {
@@ -718,7 +723,7 @@ function exportCSV() {
   var url  = URL.createObjectURL(blob);
   var a    = document.createElement('a');
   a.href     = url;
-  a.download = 'olyprobe-comparison.csv';
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
